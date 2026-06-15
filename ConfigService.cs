@@ -24,10 +24,7 @@ namespace AltRunSharp
                     if (File.Exists(_configPath))
                     {
                         string json = File.ReadAllText(_configPath);
-                        var config = JsonSerializer.Deserialize<AppConfig>(json, new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        });
+                        var config = JsonSerializer.Deserialize(json, AppConfigJsonContext.Default.AppConfig);
                         return config ?? new AppConfig();
                     }
                     else
@@ -60,10 +57,7 @@ namespace AltRunSharp
                 {
                     Directory.CreateDirectory(dir);
                 }
-                string json = JsonSerializer.Serialize(config, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
+                string json = JsonSerializer.Serialize(config, AppConfigJsonContext.Default.AppConfig);
                 File.WriteAllText(_configPath, json);
             }
             catch (Exception)

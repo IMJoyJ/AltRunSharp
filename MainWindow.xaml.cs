@@ -143,6 +143,23 @@ namespace AltRunSharp
 
         // ── Tray ─────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Loads the tray icon from the WPF embedded resource (works in both
+        /// normal builds and PublishSingleFile bundles).
+        /// </summary>
+        private static IntPtr LoadTrayIcon()
+        {
+            try
+            {
+                var uri = new Uri("pack://application:,,,/icon.ico");
+                using var stream = System.Windows.Application.GetResourceStream(uri)?.Stream;
+                if (stream != null)
+                    return new System.Drawing.Icon(stream).Handle;
+            }
+            catch { }
+            return System.Drawing.SystemIcons.Application.Handle;
+        }
+
         private void InitTray()
         {
             _nid = new NOTIFYICONDATA
@@ -152,7 +169,7 @@ namespace AltRunSharp
                 uID = 1,
                 uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
                 uCallbackMessage = WM_TRAYMSG,
-                hIcon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location)!.Handle,
+                hIcon = LoadTrayIcon(),
                 szTip = "AltRunSharp"
             };
             Shell_NotifyIcon(NIM_ADD, ref _nid);

@@ -7,6 +7,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <!-- Publish: single-file exe with ReadyToRun precompilation.
+         WPF is NOT compatible with PublishTrimmed, so we do NOT use it.
+         SelfContained is intentionally NOT set here — let the publish
+         command control it so both standalone and framework-dependent
+         builds work correctly. -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Compression only works for self-contained bundles (NETSDK1176). -->
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(SelfContained)' == 'true'">true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,8 +37,11 @@
     <None Remove="data\**" />
   </ItemGroup>
 
-  <Target Name="RenameLockedExe" BeforeTargets="BeforeBuild" Condition="Exists('$(TargetDir)$(TargetName).exe')">
+  <!-- Dev-only: rename locked exe before rebuild (local only, skipped in CI) -->
+  <Target Name="RenameLockedExe" BeforeTargets="BeforeBuild"
+          Condition="'$(CI)' != 'true' And Exists('$(TargetDir)$(TargetName).exe')">
     <Exec Command="powershell -Command &quot;try { Rename-Item -Path '$(TargetDir)$(TargetName).exe' -NewName ('$(TargetName).exe.old.' + [Guid]::NewGuid().ToString()) -ErrorAction SilentlyContinue } catch {}&quot;" />
   </Target>
 
 </Project>
+

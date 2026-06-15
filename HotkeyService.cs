@@ -179,9 +179,9 @@ namespace AltRunSharp
             if (_hhk != IntPtr.Zero) return;
 
             _hookDelegate = HookCallback;
+            // GetModuleHandle(null) returns the EXE module handle; works in both
+            // normal and SingleFile publish (GetHINSTANCE is unreliable in SingleFile).
             IntPtr hMod = GetModuleHandle(null);
-            if (hMod == IntPtr.Zero)
-                hMod = Marshal.GetHINSTANCE(typeof(HotkeyService).Module);
 
             _hhk = SetWindowsHookEx(WH_KEYBOARD_LL, _hookDelegate, hMod, 0);
             if (_hhk == IntPtr.Zero)

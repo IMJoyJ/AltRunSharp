@@ -1,0 +1,26 @@
+<linker>
+  <!--
+    WPF relies heavily on reflection internally.
+    Keep all assemblies from PresentationFramework, PresentationCore, WindowsBase.
+  -->
+  <assembly fullname="PresentationFramework" preserve="all" />
+  <assembly fullname="PresentationCore" preserve="all" />
+  <assembly fullname="WindowsBase" preserve="all" />
+  <assembly fullname="System.Windows.Controls.Ribbon" preserve="all" />
+
+  <!--
+    System.Text.Json: preserve the source-generated context entry points.
+  -->
+  <assembly fullname="System.Text.Json" preserve="all" />
+
+  <!--
+    Our app assembly: the source-generated JsonSerializerContext must not be trimmed.
+  -->
+  <assembly fullname="AltRunSharp">
+    <type fullname="AltRunSharp.AppConfigJsonContext" preserve="all" />
+    <type fullname="AltRunSharp.AppConfig" preserve="all" />
+    <type fullname="AltRunSharp.LaunchItem" preserve="all" />
+    <type fullname="AltRunSharp.ScriptItem" preserve="all" />
+    <type fullname="AltRunSharp.ScheduledTask" preserve="all" />
+  </assembly>
+</linker>
