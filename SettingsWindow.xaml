@@ -230,17 +230,23 @@
                                            Foreground="#F9E2AF" FontSize="11" TextWrapping="Wrap"
                                            FontFamily="'Segoe UI', sans-serif"
                                            Margin="18,0,0,6" Visibility="Collapsed"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBox x:Name="ServiceArgsBox"
+                                <TextBlock Text="额外启动参数（可选）" Style="{StaticResource FieldLabelStyle}"
+                                           ToolTip="传入此次启动的参数。留空则无参数。同一脚本可用不同参数多次启动，每次为独立服务实例。"/>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="ServiceArgsBox" Grid.Column="0"
                                              Style="{StaticResource FieldBoxStyle}"
-                                             Width="200" VerticalAlignment="Center"
-                                             ToolTip="启动参数（可选）。可多次启动同一脚本并传入不同参数。"/>
-                                    <Button Content="▶ 启动服务"
+                                             VerticalAlignment="Center"
+                                             ToolTip="例：--port 8080  或  &quot;arg with spaces&quot;"/>
+                                    <Button Grid.Column="1" Content="▶ 启动服务"
                                             Click="StartService_Click"
                                             Style="{StaticResource PrimaryButtonStyle}"
                                             Margin="8,0,0,0" VerticalAlignment="Center"
                                             Padding="14,6"/>
-                                </StackPanel>
+                                </Grid>
                             </StackPanel>
 
                             <!-- ScriptCodeSection: content editor (js/cs) or path picker (bat/exe) -->
@@ -355,11 +361,18 @@
                                                        Foreground="#45475A" FontSize="10"
                                                        FontFamily="Consolas" VerticalAlignment="Center"
                                                        Margin="8,0,12,0"/>
-                                            <Button Grid.Column="2" Content="停止"
-                                                    Tag="{Binding InstanceId}"
-                                                    Click="StopServiceInstance_Click"
-                                                    Style="{StaticResource SmallActionButtonStyle}"
-                                                    Foreground="#F38BA8"/>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                <Button Content="日志"
+                                                        Tag="{Binding LogFilePath}"
+                                                        Click="ViewServiceLog_Click"
+                                                        Style="{StaticResource SmallActionButtonStyle}"
+                                                        Margin="0,0,6,0"/>
+                                                <Button Content="停止"
+                                                        Tag="{Binding InstanceId}"
+                                                        Click="StopServiceInstance_Click"
+                                                        Style="{StaticResource SmallActionButtonStyle}"
+                                                        Foreground="#F38BA8"/>
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

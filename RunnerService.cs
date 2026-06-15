@@ -13,6 +13,7 @@ namespace AltRunSharp
     public class RunnerService
     {
         private readonly string _dataDir;
+        private static readonly string _appBaseDir = AppDomain.CurrentDomain.BaseDirectory;
 
         public RunnerService(string dataDir)
         {
@@ -23,10 +24,12 @@ namespace AltRunSharp
 
         public void RunLaunchItem(LaunchItem item)
         {
+            string workDir = Path.GetDirectoryName(item.Path) ?? _appBaseDir;
             var psi = new ProcessStartInfo
             {
                 FileName = item.Path,
                 Arguments = item.Args ?? string.Empty,
+                WorkingDirectory = workDir,
                 UseShellExecute = true
             };
             try { Process.Start(psi); }
@@ -56,7 +59,7 @@ namespace AltRunSharp
             bool isExe = item.ScriptType.Equals("exe", StringComparison.OrdinalIgnoreCase);
             bool isBat = item.ScriptType.Equals("bat", StringComparison.OrdinalIgnoreCase);
 
-            string exe, baseArgs;
+            string exe, baseArgs, workDir;
             if (item.ScriptType.Equals("js", StringComparison.OrdinalIgnoreCase))
             {
                 string scriptPath = Path.Combine(_dataDir, "scripts", item.ScriptFileName);
@@ -68,6 +71,7 @@ namespace AltRunSharp
                 }
                 exe = "node";
                 baseArgs = BuildArgString($"\"{scriptPath}\"", extraArgs);
+                workDir = _appBaseDir;
             }
             else if (item.ScriptType.Equals("cs", StringComparison.OrdinalIgnoreCase))
             {
@@ -80,6 +84,7 @@ namespace AltRunSharp
                 }
                 exe = "dotnet";
                 baseArgs = BuildArgString($"run \"{scriptPath}\"", extraArgs);
+                workDir = _appBaseDir;
             }
             else if (isBat)
             {
@@ -92,10 +97,10 @@ namespace AltRunSharp
                 }
                 exe = "cmd.exe";
                 baseArgs = BuildArgString($"/c \"{scriptPath}\"", extraArgs);
+                workDir = _appBaseDir;
             }
             else if (isExe)
             {
-                // ScriptFileName holds the absolute path for exe type
                 if (!File.Exists(item.ScriptFileName))
                 {
                     MessageBox.Show($"程序不存在：{item.ScriptFileName}", "AltRunSharp",
@@ -104,6 +109,7 @@ namespace AltRunSharp
                 }
                 exe = item.ScriptFileName;
                 baseArgs = BuildArgString(string.Empty, extraArgs).Trim();
+                workDir = Path.GetDirectoryName(item.ScriptFileName) ?? _appBaseDir;
             }
             else
             {
@@ -113,9 +119,9 @@ namespace AltRunSharp
             }
 
             if (item.Silent)
-                RunSilent(exe, baseArgs);
+                RunSilent(exe, baseArgs, workDir);
             else
-                RunWithOutputWindow(exe, baseArgs, item.Name);
+                RunWithOutputWindow(exe, baseArgs, item.Name, workDir);
         }
 
         // ── Workflow ──────────────────────────────────────────────────────────
@@ -130,7 +136,7 @@ namespace AltRunSharp
             }
 
             // Resolve and validate step references
-            var steps = new List<(string exe, string args, string label)>();
+            var steps = new List<(string exe, string args, string label, string workDir)>();
             var deadRefs = new List<string>();
 
             foreach (var stepName in workflow.WorkflowSteps)
@@ -146,7 +152,6 @@ namespace AltRunSharp
 
                 string stepExt = stepItem.ScriptType.ToLowerInvariant();
                 bool stepIsExe = stepExt == "exe";
-                bool stepIsBat = stepExt == "bat";
 
                 string scriptPath = stepIsExe
                     ? stepItem.ScriptFileName
@@ -158,29 +163,33 @@ namespace AltRunSharp
                     continue;
                 }
 
-                string stepExe, stepBaseArgs;
+                string stepExe, stepBaseArgs, stepWorkDir;
                 if (stepExt == "js")
                 {
                     stepExe = "node";
                     stepBaseArgs = BuildArgString($"\"{scriptPath}\"", extraArgs);
+                    stepWorkDir = _appBaseDir;
                 }
                 else if (stepExt == "bat")
                 {
                     stepExe = "cmd.exe";
                     stepBaseArgs = BuildArgString($"/c \"{scriptPath}\"", extraArgs);
+                    stepWorkDir = _appBaseDir;
                 }
                 else if (stepIsExe)
                 {
                     stepExe = scriptPath;
                     stepBaseArgs = BuildArgString(string.Empty, extraArgs).Trim();
+                    stepWorkDir = Path.GetDirectoryName(scriptPath) ?? _appBaseDir;
                 }
                 else // cs
                 {
                     stepExe = "dotnet";
                     stepBaseArgs = BuildArgString($"run \"{scriptPath}\"", extraArgs);
+                    stepWorkDir = _appBaseDir;
                 }
 
-                steps.Add((stepExe, stepBaseArgs, stepItem.Name));
+                steps.Add((stepExe, stepBaseArgs, stepItem.Name, stepWorkDir));
             }
 
             // Auto-remove dead references
@@ -222,7 +231,7 @@ namespace AltRunSharp
             return arg;
         }
 
-        private void RunSilent(string exe, string args)
+        private void RunSilent(string exe, string args, string workDir)
         {
             string logsDir = Path.Combine(_dataDir, "logs");
             Directory.CreateDirectory(logsDir);
@@ -231,6 +240,7 @@ namespace AltRunSharp
             var psi = new ProcessStartInfo
             {
                 FileName = exe, Arguments = args,
+                WorkingDirectory = workDir,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -263,9 +273,9 @@ namespace AltRunSharp
             }
         }
 
-        private static void RunWithOutputWindow(string exe, string args, string title)
+        private static void RunWithOutputWindow(string exe, string args, string title, string workDir)
         {
-            var win = new OutputWindow(exe, args, title);
+            var win = new OutputWindow(exe, args, title, workDir);
             win.Show();
         }
     }

@@ -504,6 +504,24 @@ namespace AltRunSharp
             _serviceManager.StopAllServices();
         }
 
+        private void ViewServiceLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string logPath)
+            {
+                if (!System.IO.File.Exists(logPath))
+                {
+                    MessageBox.Show("日志文件尚不存在（服务可能还未产生输出）。", "AltRunSharp",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = logPath,
+                    UseShellExecute = true   // 让系统用默认程序（通常是 notepad）打开
+                });
+            }
+        }
+
         // ── Config page ───────────────────────────────────────────────────────
 
         private void LoadConfigPage()

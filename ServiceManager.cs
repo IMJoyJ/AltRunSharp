@@ -27,6 +27,9 @@ namespace AltRunSharp
             ? Item.Name
             : $"{Item.Name}  [{ExtraArgs}]";
 
+        /// <summary>Absolute path to the log file for this instance (set when RunLoop starts).</summary>
+        public string LogFilePath { get; set; } = string.Empty;
+
         public string StatusText
         {
             get
@@ -124,10 +127,10 @@ namespace AltRunSharp
         {
             string logDir = Path.Combine(_dataDir, "logs", "services");
             Directory.CreateDirectory(logDir);
-            // Log file: safe filename from script name + instance ID
             string safeName = string.Concat(entry.Item.Name.Select(c =>
                 Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
             string logFile = Path.Combine(logDir, $"{safeName}_{entry.InstanceId}.log");
+            entry.LogFilePath = logFile;  // expose for UI
 
             while (!entry.StopRequested)
             {
@@ -145,26 +148,30 @@ namespace AltRunSharp
                     break;
                 }
 
-                string exe, baseArgs;
+                string exe, baseArgs, workDir;
                 if (scriptType == "js")
                 {
                     exe = "node";
                     baseArgs = $"\"{resolvedPath}\"";
+                    workDir = AppDomain.CurrentDomain.BaseDirectory;
                 }
                 else if (scriptType == "cs")
                 {
                     exe = "dotnet";
                     baseArgs = $"run \"{resolvedPath}\"";
+                    workDir = AppDomain.CurrentDomain.BaseDirectory;
                 }
                 else if (isBat)
                 {
                     exe = "cmd.exe";
                     baseArgs = $"/c \"{resolvedPath}\"";
+                    workDir = AppDomain.CurrentDomain.BaseDirectory;
                 }
                 else if (isExe)
                 {
                     exe = resolvedPath;
                     baseArgs = string.Empty;
+                    workDir = Path.GetDirectoryName(resolvedPath) ?? AppDomain.CurrentDomain.BaseDirectory;
                 }
                 else break; // unsupported type
 
@@ -176,6 +183,7 @@ namespace AltRunSharp
                 {
                     FileName = exe,
                     Arguments = fullArgs,
+                    WorkingDirectory = workDir,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,

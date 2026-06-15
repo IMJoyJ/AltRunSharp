@@ -14,7 +14,7 @@ namespace AltRunSharp
 
         // ── Single-command constructor (existing behavior) ────────────────────
 
-        public OutputWindow(string exe, string args, string title)
+        public OutputWindow(string exe, string args, string title, string workingDir = "")
         {
             InitializeComponent();
             TitleLabel.Text = title;
@@ -25,6 +25,7 @@ namespace AltRunSharp
                 {
                     FileName = exe,
                     Arguments = args,
+                    WorkingDirectory = workingDir,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -67,7 +68,7 @@ namespace AltRunSharp
         // ── Multi-command constructor (workflow) ─────────────────────────────
         // Runs each (exe, args, stepLabel) in sequence on a background task.
 
-        public OutputWindow(IReadOnlyList<(string exe, string args, string label)> steps, string title)
+        public OutputWindow(IReadOnlyList<(string exe, string args, string label, string workDir)> steps, string title)
         {
             InitializeComponent();
             TitleLabel.Text = title;
@@ -79,7 +80,7 @@ namespace AltRunSharp
             Task.Run(async () =>
             {
                 int stepIndex = 0;
-                foreach (var (exe, args, label) in steps)
+                foreach (var (exe, args, label, workDir) in steps)
                 {
                     if (_killed) break;
                     stepIndex++;
@@ -94,6 +95,7 @@ namespace AltRunSharp
                         {
                             FileName = exe,
                             Arguments = args,
+                            WorkingDirectory = workDir,
                             UseShellExecute = false,
                             RedirectStandardOutput = true,
                             RedirectStandardError = true,
