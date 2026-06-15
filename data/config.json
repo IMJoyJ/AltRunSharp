@@ -1,0 +1,67 @@
+{
+  "Hotkey": "Ctrl",
+  "ClickMode": "double",
+  "StartupEnabled": false,
+  "ContextMenuEnabled": false,
+  "LaunchItems": [
+    {
+      "Name": "\u8BB0\u4E8B\u672C",
+      "Description": "Windows \u8BB0\u4E8B\u672C",
+      "Path": "C:\\Windows\\System32\\notepad.exe",
+      "Args": ""
+    },
+    {
+      "Name": "\u8BA1\u7B97\u5668",
+      "Description": "Windows \u8BA1\u7B97\u5668",
+      "Path": "C:\\Windows\\System32\\calc.exe",
+      "Args": ""
+    },
+    {
+      "Name": "\u8D44\u6E90\u7BA1\u7406\u5668",
+      "Description": "\u6253\u5F00\u6587\u4EF6\u8D44\u6E90\u7BA1\u7406\u5668",
+      "Path": "C:\\Windows\\explorer.exe",
+      "Args": ""
+    },
+    {
+      "Name": "\u4EFB\u52A1\u7BA1\u7406\u5668",
+      "Description": "Windows \u4EFB\u52A1\u7BA1\u7406\u5668",
+      "Path": "C:\\Windows\\System32\\Taskmgr.exe",
+      "Args": ""
+    },
+    {
+      "Name": "Antigravity",
+      "Description": "",
+      "Path": "C:\\Users\\jiayushen\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe",
+      "Args": ""
+    },
+    {
+      "Name": "VSCode",
+      "Description": "VSCode",
+      "Path": "C:\\Program Files\\Microsoft VS Code\\Code.exe",
+      "Args": ""
+    }
+  ],
+  "ScriptItems": [
+    {
+      "Name": "test_args",
+      "Description": "\u6D4B\u8BD5\u53C2\u6570\u4F20\u9012\uFF08JS\uFF09",
+      "ScriptType": "js",
+      "Silent": false,
+      "ScriptFileName": "test_args.js"
+    },
+    {
+      "Name": "test_env",
+      "Description": "\u6D4B\u8BD5\u73AF\u5883\u53D8\u91CF\uFF08C#\uFF09",
+      "ScriptType": "cs",
+      "Silent": false,
+      "ScriptFileName": "test_env.cs"
+    },
+    {
+      "Name": "test_silent",
+      "Description": "\u9759\u9ED8\u8FD0\u884C\u6D4B\u8BD5\uFF08JS\uFF0C\u8F93\u51FA\u5230\u65E5\u5FD7\uFF09",
+      "ScriptType": "js",
+      "Silent": true,
+      "ScriptFileName": "test_args.js"
+    }
+  ]
+}

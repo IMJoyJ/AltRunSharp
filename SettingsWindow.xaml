@@ -1,0 +1,587 @@
+<Window x:Class="AltRunSharp.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AltRunSharp 设置" Height="600" Width="860"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E2E"
+        MinWidth="700" MinHeight="480"
+        Icon="pack://application:,,,/icon.ico">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top bar -->
+        <Border Grid.Row="0" Background="#181825" BorderBrush="#313244" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0">
+                <TextBlock Text="AltRunSharp" VerticalAlignment="Center"
+                           Foreground="#CBA6F7" FontSize="16" FontWeight="Bold"
+                           FontFamily="'Segoe UI', sans-serif"/>
+                <Button x:Name="HideToTrayBtn" Content="隐藏到托盘"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Click="HideToTray_Click"
+                        Style="{StaticResource TopBarButtonStyle}"/>
+            </Grid>
+        </Border>
+
+        <!-- Content: left nav + right panel -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left navigation -->
+            <Border Grid.Column="0" Background="#181825" BorderBrush="#313244" BorderThickness="0,0,1,0">
+                <StackPanel Margin="8,12,8,0">
+                    <Button x:Name="NavLaunchBtn" Content="🚀  快速启动"
+                            Style="{StaticResource NavButtonStyle}"
+                            Tag="launch"
+                            Click="Nav_Click"/>
+                    <Button x:Name="NavScriptBtn" Content="📜  脚本执行"
+                            Style="{StaticResource NavButtonStyle}"
+                            Tag="script"
+                            Click="Nav_Click"/>
+                    <Button x:Name="NavServiceBtn" Content="⚡  服务管理"
+                            Style="{StaticResource NavButtonStyle}"
+                            Tag="service"
+                            Click="Nav_Click"/>
+                    <Button x:Name="NavScheduleBtn" Content="🗓  计划任务"
+                            Style="{StaticResource NavButtonStyle}"
+                            Tag="schedule"
+                            Click="Nav_Click"/>
+                    <Button x:Name="NavConfigBtn" Content="⚙️  配置"
+                            Style="{StaticResource NavButtonStyle}"
+                            Tag="config"
+                            Click="Nav_Click"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Right panel: three pages -->
+            <Grid Grid.Column="1">
+
+                <!-- ══ LAUNCH PAGE ══ -->
+                <Grid x:Name="LaunchPage" Visibility="Visible">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- List -->
+                    <Grid Grid.Column="0" Background="#181825">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <ListBox x:Name="LaunchList" Grid.Row="0"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#CDD6F4"
+                                 SelectionChanged="LaunchList_SelectionChanged"
+                                 ItemContainerStyle="{StaticResource SideListItemStyle}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" Padding="4,2" FontSize="13"
+                                               FontFamily="'Segoe UI', sans-serif"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="8,6">
+                            <Button Content="+ 添加" Click="LaunchAdd_Click" Style="{StaticResource SmallActionButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="− 删除" Click="LaunchDelete_Click" Style="{StaticResource SmallActionButtonStyle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Edit area -->
+                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="LaunchEditPanel" Margin="20,16" IsEnabled="False">
+                            <TextBlock Text="名称" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="LaunchNameBox" Style="{StaticResource FieldBoxStyle}" TextChanged="LaunchField_Changed"/>
+
+                            <TextBlock Text="描述" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="LaunchDescBox" Style="{StaticResource FieldBoxStyle}" TextChanged="LaunchField_Changed"/>
+
+                            <TextBlock Text="程序路径" Style="{StaticResource FieldLabelStyle}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="LaunchPathBox" Grid.Column="0" Style="{StaticResource FieldBoxStyle}" TextChanged="LaunchField_Changed"/>
+                                <Button Grid.Column="1" Content="浏览" Click="LaunchBrowse_Click"
+                                        Style="{StaticResource SmallActionButtonStyle}" Margin="8,0,0,0" VerticalAlignment="Bottom"/>
+                            </Grid>
+
+                            <TextBlock Text="启动参数（可选）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="LaunchArgsBox" Style="{StaticResource FieldBoxStyle}" TextChanged="LaunchField_Changed"/>
+
+                            <TextBlock Text="别名（每行一个，用于搜索匹配）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="LaunchAliasBox"
+                                     Style="{StaticResource FieldBoxStyle}"
+                                     Height="72" AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     TextChanged="LaunchField_Changed"/>
+
+                            <Button Content="保存" Click="LaunchSave_Click"
+                                    Style="{StaticResource PrimaryButtonStyle}" Margin="0,16,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ══ SCRIPT PAGE ══ -->
+                <Grid x:Name="ScriptPage" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- List -->
+                    <Grid Grid.Column="0" Background="#181825">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <ListBox x:Name="ScriptList" Grid.Row="0"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#CDD6F4"
+                                 SelectionChanged="ScriptList_SelectionChanged"
+                                 ItemContainerStyle="{StaticResource SideListItemStyle}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" Padding="4,2" FontSize="13"
+                                               FontFamily="'Segoe UI', sans-serif"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="8,6">
+                            <Button Content="+ 添加" Click="ScriptAdd_Click" Style="{StaticResource SmallActionButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="− 删除" Click="ScriptDelete_Click" Style="{StaticResource SmallActionButtonStyle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Edit area -->
+                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ScriptEditPanel" Margin="20,16" IsEnabled="False">
+                            <TextBlock Text="命令名称（/name）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="ScriptNameBox" Style="{StaticResource FieldBoxStyle}" TextChanged="ScriptField_Changed"/>
+
+                            <TextBlock Text="描述" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="ScriptDescBox" Style="{StaticResource FieldBoxStyle}" TextChanged="ScriptField_Changed"/>
+
+                            <!-- ScriptType -->
+                            <TextBlock Text="脚本类型" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="ScriptTypeBox" Style="{StaticResource FieldComboStyle}"
+                                      Width="200" HorizontalAlignment="Left"
+                                      SelectionChanged="ScriptField_Changed">
+                                <ComboBoxItem Content="JavaScript (.js)" Tag="js"/>
+                                <ComboBoxItem Content="C# (.cs)" Tag="cs"/>
+                                <ComboBoxItem Content="工作流" Tag="workflow"/>
+                            </ComboBox>
+
+                            <!-- LaunchMode (hidden for workflow) -->
+                            <StackPanel x:Name="LaunchModeSection">
+                                <TextBlock Text="启动方式" Style="{StaticResource FieldLabelStyle}"/>
+                                <ComboBox x:Name="LaunchModeBox" Style="{StaticResource FieldComboStyle}"
+                                          Width="200" HorizontalAlignment="Left"
+                                          SelectionChanged="ScriptField_Changed">
+                                    <ComboBoxItem Content="一次性" Tag="once"/>
+                                    <ComboBoxItem Content="服务" Tag="service"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!-- OnceModeSection: run-mode combo (once only) -->
+                            <StackPanel x:Name="OnceModeSection">
+                                <TextBlock Text="运行方式" Style="{StaticResource FieldLabelStyle}"/>
+                                <ComboBox x:Name="ScriptSilentBox" Style="{StaticResource FieldComboStyle}"
+                                          Width="200" HorizontalAlignment="Left"
+                                          SelectionChanged="ScriptField_Changed">
+                                    <ComboBoxItem Content="显式（弹窗）" Tag="false"/>
+                                    <ComboBoxItem Content="静默（日志）" Tag="true"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!-- ServiceSection: boot start + start button -->
+                            <StackPanel x:Name="ServiceSection" Visibility="Collapsed" Margin="0,0,0,8">
+                                <CheckBox x:Name="ServiceBootBox"
+                                          Content="开机启动（宿主程序启动时自动运行此服务）"
+                                          Foreground="#CDD6F4" FontSize="13"
+                                          FontFamily="'Segoe UI', sans-serif"
+                                          Margin="0,0,0,4"
+                                          Checked="ServiceBoot_Changed" Unchecked="ServiceBoot_Changed"/>
+                                <TextBlock x:Name="ServiceBootWarning"
+                                           Text="⚠ 宿主程序未设置开机启动，此设置不会实际生效。请在【配置】页打开宿主程序的开机启动。"
+                                           Foreground="#F9E2AF" FontSize="11" TextWrapping="Wrap"
+                                           FontFamily="'Segoe UI', sans-serif"
+                                           Margin="18,0,0,6" Visibility="Collapsed"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBox x:Name="ServiceArgsBox"
+                                             Style="{StaticResource FieldBoxStyle}"
+                                             Width="200" VerticalAlignment="Center"
+                                             ToolTip="启动参数（可选）。可多次启动同一脚本并传入不同参数。"/>
+                                    <Button Content="▶ 启动服务"
+                                            Click="StartService_Click"
+                                            Style="{StaticResource PrimaryButtonStyle}"
+                                            Margin="8,0,0,0" VerticalAlignment="Center"
+                                            Padding="14,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- ScriptCodeSection: content editor (js/cs only) -->
+                            <StackPanel x:Name="ScriptCodeSection">
+                                <TextBlock Text="脚本内容" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="ScriptContentBox"
+                                         Style="{StaticResource FieldBoxStyle}"
+                                         Height="200" AcceptsReturn="True" AcceptsTab="True"
+                                         TextWrapping="NoWrap"
+                                         FontFamily="Consolas, 'Courier New', monospace"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         TextChanged="ScriptField_Changed"/>
+                            </StackPanel>
+
+                            <!-- WorkflowSection: step list (workflow only) -->
+                            <StackPanel x:Name="WorkflowSection" Visibility="Collapsed">
+                                <TextBlock Text="工作流步骤（按顺序执行，参数应用到所有步骤）"
+                                           Style="{StaticResource FieldLabelStyle}"/>
+                                <Border BorderBrush="#45475A" BorderThickness="1" CornerRadius="4"
+                                        Height="140" Margin="0,0,0,6">
+                                    <ListBox x:Name="WorkflowStepList"
+                                             Background="#1E1E2E" BorderThickness="0"
+                                             Foreground="#CDD6F4" FontSize="13"
+                                             FontFamily="'Segoe UI', sans-serif"/>
+                                </Border>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="WorkflowAddCombo"
+                                              Style="{StaticResource FieldComboStyle}"
+                                              Grid.Column="0" Margin="0,0,6,0"
+                                              ToolTip="选择要加入的脚本（不含工作流类型）"/>
+                                    <Button Grid.Column="1" Content="加入"
+                                            Click="WorkflowAdd_Click"
+                                            Style="{StaticResource SmallActionButtonStyle}"
+                                            Margin="0,0,6,0"/>
+                                    <Button Grid.Column="2" Content="删除"
+                                            Click="WorkflowRemove_Click"
+                                            Style="{StaticResource SmallActionButtonStyle}"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <TextBlock Text="别名（每行一个，用于搜索匹配）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="ScriptAliasBox"
+                                     Style="{StaticResource FieldBoxStyle}"
+                                     Height="72" AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     TextChanged="ScriptField_Changed"/>
+
+                            <Button Content="保存" Click="ScriptSave_Click"
+                                    Style="{StaticResource PrimaryButtonStyle}" Margin="0,16,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ══ SERVICE PAGE ══ -->
+                <Grid x:Name="ServicePage" Visibility="Collapsed">
+                    <StackPanel Margin="24,20">
+                        <TextBlock Text="服务管理" Style="{StaticResource SectionHeaderStyle}"/>
+                        <TextBlock Text="正在运行的服务实例（同一脚本可多实例运行）"
+                                   Foreground="#6C7086" FontSize="12"
+                                   FontFamily="'Segoe UI', sans-serif" Margin="0,0,0,12"/>
+
+                        <!-- Dynamic service list, populated in code-behind -->
+                        <ItemsControl x:Name="ServiceListPanel">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#313244" CornerRadius="6"
+                                            Margin="0,0,0,6" Padding="12,10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding DisplayName}"
+                                                           Foreground="#CDD6F4" FontSize="13" FontWeight="SemiBold"
+                                                           FontFamily="'Segoe UI', sans-serif"/>
+                                                <TextBlock Text="{Binding StatusText}"
+                                                           Foreground="#6C7086" FontSize="11"
+                                                           FontFamily="'Segoe UI', sans-serif" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding InstanceId}"
+                                                       Foreground="#45475A" FontSize="10"
+                                                       FontFamily="Consolas" VerticalAlignment="Center"
+                                                       Margin="8,0,12,0"/>
+                                            <Button Grid.Column="2" Content="停止"
+                                                    Tag="{Binding InstanceId}"
+                                                    Click="StopServiceInstance_Click"
+                                                    Style="{StaticResource SmallActionButtonStyle}"
+                                                    Foreground="#F38BA8"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock x:Name="NoServicesText" Text="暂无运行中的服务"
+                                   Foreground="#45475A" FontSize="13"
+                                   FontFamily="'Segoe UI', sans-serif"
+                                   HorizontalAlignment="Center" Margin="0,40,0,0"/>
+
+                        <Button Content="停止全部服务" Click="StopAllServices_Click"
+                                Style="{StaticResource SmallActionButtonStyle}"
+                                Foreground="#F38BA8" Margin="0,16,0,0"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- ══ SCHEDULE PAGE ══ -->
+                <Grid x:Name="SchedulePage" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: task list -->
+                    <Grid Grid.Column="0" Background="#181825">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <ListBox x:Name="ScheduleList" Grid.Row="0"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#CDD6F4"
+                                 SelectionChanged="ScheduleList_SelectionChanged"
+                                 ItemContainerStyle="{StaticResource SideListItemStyle}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="4,2">
+                                        <TextBlock Text="{Binding Name}" FontSize="13"
+                                                   FontFamily="'Segoe UI', sans-serif"/>
+                                        <TextBlock Text="{Binding TriggerType}" FontSize="10"
+                                                   Foreground="#6C7086"
+                                                   FontFamily="'Segoe UI', sans-serif"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="8,6">
+                            <Button Content="+ 添加" Click="ScheduleAdd_Click"
+                                    Style="{StaticResource SmallActionButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="− 删除" Click="ScheduleDelete_Click"
+                                    Style="{StaticResource SmallActionButtonStyle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Right: edit panel -->
+                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ScheduleEditPanel" Margin="20,16" IsEnabled="False">
+
+                            <TextBlock Text="任务名称" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="SchNameBox" Style="{StaticResource FieldBoxStyle}"/>
+
+                            <TextBlock Text="描述（可选）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="SchDescBox" Style="{StaticResource FieldBoxStyle}"/>
+
+                            <!-- Workflow selection -->
+                            <TextBlock Text="执行工作流" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="SchWorkflowCombo" Style="{StaticResource FieldComboStyle}"
+                                      ToolTip="选择要执行的工作流类型脚本"/>
+
+                            <!-- Args script -->
+                            <TextBlock Text="参数脚本（可选）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBlock Text="该脚本运行后，其 stdout 输出被解析为传入工作流的参数（格式同启动器命令行参数）"
+                                       Foreground="#6C7086" FontSize="11" TextWrapping="Wrap"
+                                       FontFamily="'Segoe UI', sans-serif" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="SchArgsScriptCombo" Style="{StaticResource FieldComboStyle}"
+                                      ToolTip="选择参数脚本（js 或 cs，非工作流）"/>
+
+                            <!-- Trigger type -->
+                            <TextBlock Text="触发方式" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="SchTriggerTypeCombo" Style="{StaticResource FieldComboStyle}"
+                                      Width="200" HorizontalAlignment="Left"
+                                      SelectionChanged="SchTriggerType_Changed">
+                                <ComboBoxItem Content="间隔式运行" Tag="interval"/>
+                                <ComboBoxItem Content="每日固定时间" Tag="daily"/>
+                            </ComboBox>
+
+                            <!-- Interval section -->
+                            <StackPanel x:Name="SchIntervalSection">
+                                <TextBlock Text="间隔时间" Style="{StaticResource FieldLabelStyle}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox x:Name="SchIntervalValueBox"
+                                             Style="{StaticResource FieldBoxStyle}"
+                                             Width="80" VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="SchIntervalUnitCombo"
+                                              Style="{StaticResource FieldComboStyle}"
+                                              Width="100" Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <ComboBoxItem Content="小时" Tag="h"/>
+                                        <ComboBoxItem Content="分钟" Tag="m"/>
+                                        <ComboBoxItem Content="秒" Tag="s"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Daily times section -->
+                            <StackPanel x:Name="SchDailySection" Visibility="Collapsed">
+                                <TextBlock Text="触发时刻（每日，可多个）" Style="{StaticResource FieldLabelStyle}"/>
+                                <Border BorderBrush="#45475A" BorderThickness="1" CornerRadius="4"
+                                        Height="100" Margin="0,0,0,6">
+                                    <ListBox x:Name="SchDailyTimesList"
+                                             Background="#1E1E2E" BorderThickness="0"
+                                             Foreground="#CDD6F4" FontSize="13"
+                                             FontFamily="'Segoe UI', sans-serif"/>
+                                </Border>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox x:Name="SchNewTimeBox"
+                                             Style="{StaticResource FieldBoxStyle}"
+                                             Width="100" VerticalAlignment="Center"
+                                             ToolTip="格式: HH:mm，例如 09:30"/>
+                                    <Button Content="添加时刻" Click="SchAddTime_Click"
+                                            Style="{StaticResource SmallActionButtonStyle}"
+                                            Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                    <Button Content="删除选中" Click="SchRemoveTime_Click"
+                                            Style="{StaticResource SmallActionButtonStyle}"
+                                            VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Boot start -->
+                            <CheckBox x:Name="SchBootBox"
+                                      Content="开机启动（宿主程序启动时自动启用此计划任务）"
+                                      Foreground="#CDD6F4" FontSize="13"
+                                      FontFamily="'Segoe UI', sans-serif"
+                                      Margin="0,12,0,4"
+                                      Checked="SchBoot_Changed" Unchecked="SchBoot_Changed"/>
+                            <TextBlock x:Name="SchBootWarning"
+                                       Text="⚠ 宿主程序未设置开机启动，此设置不会实际生效。"
+                                       Foreground="#F9E2AF" FontSize="11" TextWrapping="Wrap"
+                                       FontFamily="'Segoe UI', sans-serif"
+                                       Margin="18,0,0,6" Visibility="Collapsed"/>
+
+                            <!-- Conflict resolution -->
+                            <TextBlock Text="触发冲突解决（上次仍在执行时）"
+                                       Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="SchConflictCombo" Style="{StaticResource FieldComboStyle}"
+                                      Width="220" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="跳过本次执行" Tag="skip"/>
+                                <ComboBoxItem Content="终止旧执行后开始" Tag="kill"/>
+                                <ComboBoxItem Content="并行执行（新线程）" Tag="parallel"/>
+                            </ComboBox>
+
+                            <!-- Enable toggle -->
+                            <CheckBox x:Name="SchEnabledBox"
+                                      Content="启用此计划任务"
+                                      Foreground="#CDD6F4" FontSize="13"
+                                      FontFamily="'Segoe UI', sans-serif"
+                                      Margin="0,12,0,0"/>
+
+                            <!-- Status display -->
+                            <TextBlock x:Name="SchStatusText"
+                                       Foreground="#A6E3A1" FontSize="12"
+                                       FontFamily="'Segoe UI', sans-serif"
+                                       Margin="0,8,0,0"/>
+
+                            <!-- Buttons -->
+                            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                                <Button Content="保存" Click="ScheduleSave_Click"
+                                        Style="{StaticResource PrimaryButtonStyle}"/>
+                                <Button Content="▶ 立即执行" Click="ScheduleFireNow_Click"
+                                        Style="{StaticResource SmallActionButtonStyle}"
+                                        Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                <Button Content="■ 停止" Click="ScheduleStop_Click"
+                                        Style="{StaticResource SmallActionButtonStyle}"
+                                        Foreground="#F38BA8"
+                                        Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ══ CONFIG PAGE ══ -->
+                <ScrollViewer x:Name="ConfigPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="28,20">
+
+                        <TextBlock Text="全局快捷键" Style="{StaticResource SectionHeaderStyle}"/>
+
+                        <TextBlock Text="点击次数" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="ClickModeBox" Style="{StaticResource FieldComboStyle}"
+                                  Width="200" HorizontalAlignment="Left"
+                                  SelectionChanged="ConfigField_Changed">
+                            <ComboBoxItem Content="单击" Tag="single"/>
+                            <ComboBoxItem Content="双击" Tag="double"/>
+                            <ComboBoxItem Content="三击" Tag="triple"/>
+                        </ComboBox>
+
+                        <TextBlock Text="快捷键（点击后按键录制）" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBlock Foreground="#6C7086" FontSize="11" Margin="0,0,0,4"
+                                   FontFamily="'Segoe UI', sans-serif">
+                            支持：Ctrl / Alt / Shift / Alt+R / Ctrl+Space 等组合。不支持纯多修饰键组合（如 Alt+Shift）。
+                        </TextBlock>
+                        <TextBox x:Name="HotkeyRecordBox"
+                                 Style="{StaticResource FieldBoxStyle}"
+                                 Width="240" HorizontalAlignment="Left"
+                                 IsReadOnly="True"
+                                 Cursor="Hand"
+                                 ToolTip="点击后按下目标快捷键进行录制"
+                                 GotFocus="HotkeyRecordBox_GotFocus"
+                                 LostFocus="HotkeyRecordBox_LostFocus"
+                                 PreviewKeyDown="HotkeyRecordBox_PreviewKeyDown"
+                                 PreviewKeyUp="HotkeyRecordBox_PreviewKeyUp"/>
+                        <TextBlock x:Name="HotkeyHint" Text="点击上方输入框，然后按下目标组合键"
+                                   Foreground="#6C7086" FontSize="11" Margin="0,2,0,12"
+                                   FontFamily="'Segoe UI', sans-serif"/>
+
+                        <Rectangle Height="1" Fill="#313244" Margin="0,8,0,16"/>
+                        <TextBlock Text="系统集成" Style="{StaticResource SectionHeaderStyle}"/>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="开机自动启动" Foreground="#CDD6F4" FontSize="14"
+                                           FontFamily="'Segoe UI', sans-serif"/>
+                                <TextBlock Text="将 AltRunSharp 添加到 Windows 启动项（当前用户）"
+                                           Foreground="#6C7086" FontSize="11"
+                                           FontFamily="'Segoe UI', sans-serif"/>
+                            </StackPanel>
+                            <ToggleButton x:Name="StartupToggle" Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          Checked="StartupToggle_Checked"
+                                          Unchecked="StartupToggle_Unchecked"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text='右键菜单"添加到 AltRun"' Foreground="#CDD6F4" FontSize="14"
+                                           FontFamily="'Segoe UI', sans-serif"/>
+                                <TextBlock Text="在 .exe 文件右键菜单添加快捷方式（需要管理员权限）"
+                                           Foreground="#6C7086" FontSize="11"
+                                           FontFamily="'Segoe UI', sans-serif"/>
+                            </StackPanel>
+                            <ToggleButton x:Name="ContextMenuToggle" Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          Checked="ContextMenuToggle_Checked"
+                                          Unchecked="ContextMenuToggle_Unchecked"/>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

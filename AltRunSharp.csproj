@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <EmbeddedResource Remove="tests\**" />
+    <None Remove="tests\**" />
+    <Page Remove="tests\**" />
+    <!-- Exclude runtime scripts from compilation -->
+    <Compile Remove="data\**" />
+    <EmbeddedResource Remove="data\**" />
+    <None Remove="data\**" />
+  </ItemGroup>
+
+  <Target Name="RenameLockedExe" BeforeTargets="BeforeBuild" Condition="Exists('$(TargetDir)$(TargetName).exe')">
+    <Exec Command="powershell -Command &quot;try { Rename-Item -Path '$(TargetDir)$(TargetName).exe' -NewName ('$(TargetName).exe.old.' + [Guid]::NewGuid().ToString()) -ErrorAction SilentlyContinue } catch {}&quot;" />
+  </Target>
+
+</Project>
