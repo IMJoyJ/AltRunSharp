@@ -131,25 +131,42 @@ namespace AltRunSharp
 
             while (!entry.StopRequested)
             {
-                string scriptPath = Path.Combine(_dataDir, "scripts", entry.Item.ScriptFileName);
-                if (!File.Exists(scriptPath))
+                string scriptType = entry.Item.ScriptType.ToLowerInvariant();
+                bool isExe = scriptType == "exe";
+                bool isBat = scriptType == "bat";
+
+                string resolvedPath = isExe
+                    ? entry.Item.ScriptFileName
+                    : Path.Combine(_dataDir, "scripts", entry.Item.ScriptFileName);
+
+                if (!File.Exists(resolvedPath))
                 {
-                    AppendLog(logFile, $"[ERROR] 脚本文件不存在: {scriptPath}");
+                    AppendLog(logFile, $"[ERROR] 文件不存在: {resolvedPath}");
                     break;
                 }
 
                 string exe, baseArgs;
-                if (entry.Item.ScriptType.Equals("js", StringComparison.OrdinalIgnoreCase))
+                if (scriptType == "js")
                 {
                     exe = "node";
-                    baseArgs = $"\"{scriptPath}\"";
+                    baseArgs = $"\"{resolvedPath}\"";
                 }
-                else if (entry.Item.ScriptType.Equals("cs", StringComparison.OrdinalIgnoreCase))
+                else if (scriptType == "cs")
                 {
                     exe = "dotnet";
-                    baseArgs = $"run \"{scriptPath}\"";
+                    baseArgs = $"run \"{resolvedPath}\"";
                 }
-                else break;
+                else if (isBat)
+                {
+                    exe = "cmd.exe";
+                    baseArgs = $"/c \"{resolvedPath}\"";
+                }
+                else if (isExe)
+                {
+                    exe = resolvedPath;
+                    baseArgs = string.Empty;
+                }
+                else break; // unsupported type
 
                 string fullArgs = string.IsNullOrWhiteSpace(entry.ExtraArgs)
                     ? baseArgs

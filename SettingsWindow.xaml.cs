@@ -190,12 +190,15 @@ namespace AltRunSharp
 
             ScriptNameBox.Text = item?.Name ?? string.Empty;
             ScriptDescBox.Text = item?.Description ?? string.Empty;
+            ExcludeFromSearchBox.IsChecked = item?.ExcludeFromSearch ?? false;
 
-            // ScriptType (js=0, cs=1, workflow=2)
+            // ScriptType (js=0, cs=1, bat=2, exe=3, workflow=4)
             ScriptTypeBox.SelectedIndex = (item?.ScriptType ?? "js").ToLowerInvariant() switch
             {
                 "cs"       => 1,
-                "workflow" => 2,
+                "bat"      => 2,
+                "exe"      => 3,
+                "workflow" => 4,
                 _          => 0
             };
 
@@ -208,8 +211,16 @@ namespace AltRunSharp
             // Boot start
             ServiceBootBox.IsChecked = item?.BootStart ?? false;
 
+            string scriptType = item?.ScriptType?.ToLowerInvariant() ?? "js";
+
+            // Path box (bat/exe)
+            if (scriptType is "bat" or "exe")
+                ScriptPathBox.Text = item?.ScriptFileName ?? string.Empty;
+            else
+                ScriptPathBox.Text = string.Empty;
+
             // Script content (js/cs only)
-            if (item != null && item.ScriptType != "workflow" && !string.IsNullOrEmpty(item.ScriptFileName))
+            if (item != null && scriptType is "js" or "cs" && !string.IsNullOrEmpty(item.ScriptFileName))
             {
                 string path = Path.Combine(GetScriptsDir(), item.ScriptFileName);
                 ScriptContentBox.Text = File.Exists(path) ? File.ReadAllText(path) : string.Empty;
@@ -237,15 +248,20 @@ namespace AltRunSharp
         {
             string scriptType = (ScriptTypeBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "js";
             string launchMode = (LaunchModeBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "once";
-            bool isWorkflow = scriptType == "workflow";
-            bool isService  = !isWorkflow && launchMode == "service";
-            bool isOnce     = !isWorkflow && !isService;
+            bool isWorkflow  = scriptType == "workflow";
+            bool isPathBased = scriptType is "bat" or "exe";   // bat/exe use path picker, not code editor
+            bool isService   = !isWorkflow && launchMode == "service";
+            bool isOnce      = !isWorkflow && !isService;
 
-            LaunchModeSection.Visibility  = isWorkflow ? Visibility.Collapsed : Visibility.Visible;
-            OnceModeSection.Visibility    = isOnce     ? Visibility.Visible   : Visibility.Collapsed;
-            ServiceSection.Visibility     = isService  ? Visibility.Visible   : Visibility.Collapsed;
-            ScriptCodeSection.Visibility  = isWorkflow ? Visibility.Collapsed : Visibility.Visible;
-            WorkflowSection.Visibility    = isWorkflow ? Visibility.Visible   : Visibility.Collapsed;
+            LaunchModeSection.Visibility   = isWorkflow  ? Visibility.Collapsed : Visibility.Visible;
+            OnceModeSection.Visibility     = isOnce      ? Visibility.Visible   : Visibility.Collapsed;
+            ServiceSection.Visibility      = isService   ? Visibility.Visible   : Visibility.Collapsed;
+            ScriptCodeSection.Visibility   = isWorkflow  ? Visibility.Collapsed : Visibility.Visible;
+            WorkflowSection.Visibility     = isWorkflow  ? Visibility.Visible   : Visibility.Collapsed;
+
+            // Within ScriptCodeSection: path picker vs code editor
+            ScriptPathSection.Visibility   = isPathBased ? Visibility.Visible   : Visibility.Collapsed;
+            ScriptEditorSection.Visibility = isPathBased ? Visibility.Collapsed : Visibility.Visible;
 
             // Boot start warning
             if (isService && (ServiceBootBox.IsChecked == true) && !_config.StartupEnabled)
@@ -305,6 +321,7 @@ namespace AltRunSharp
             bool silent = launchMode == "service" ||
                           ((ScriptSilentBox.SelectedItem as ComboBoxItem)?.Tag as string == "true");
             bool bootStart = ServiceBootBox.IsChecked == true;
+            bool excludeFromSearch = ExcludeFromSearchBox.IsChecked == true;
 
             _editingScript.Name = name;
             _editingScript.Description = ScriptDescBox.Text.Trim();
@@ -312,21 +329,57 @@ namespace AltRunSharp
             _editingScript.LaunchMode = scriptType == "workflow" ? "once" : launchMode;
             _editingScript.Silent = silent;
             _editingScript.BootStart = bootStart;
+            _editingScript.ExcludeFromSearch = excludeFromSearch;
             _editingScript.Aliases = ParseLines(ScriptAliasBox.Text);
 
             if (scriptType == "workflow")
             {
                 // WorkflowSteps already updated live via Add/Remove buttons
-                // Clear script file fields
                 _editingScript.ScriptFileName = string.Empty;
+            }
+            else if (scriptType is "bat" or "exe")
+            {
+                string pickedPath = ScriptPathBox.Text.Trim();
+                if (string.IsNullOrEmpty(pickedPath))
+                {
+                    MessageBox.Show("请填写文件路径。", "AltRunSharp");
+                    return;
+                }
+
+                if (scriptType == "bat")
+                {
+                    // Copy bat file into data/scripts/ and track by filename
+                    string fileName = name + ".bat";
+                    string scriptsDir = GetScriptsDir();
+                    Directory.CreateDirectory(scriptsDir);
+                    string dest = Path.Combine(scriptsDir, fileName);
+
+                    // Delete old if renamed/type changed
+                    if (!string.IsNullOrEmpty(_editingScript.ScriptFileName) &&
+                        _editingScript.ScriptFileName != fileName)
+                    {
+                        try { File.Delete(Path.Combine(scriptsDir, _editingScript.ScriptFileName)); } catch { }
+                    }
+
+                    // If user edited path to a new source file, copy it; otherwise keep existing
+                    if (!string.Equals(pickedPath, dest, StringComparison.OrdinalIgnoreCase) &&
+                        File.Exists(pickedPath))
+                    {
+                        File.Copy(pickedPath, dest, overwrite: true);
+                    }
+                    _editingScript.ScriptFileName = fileName;
+                }
+                else // exe: store absolute path directly in ScriptFileName
+                {
+                    _editingScript.ScriptFileName = pickedPath;
+                }
             }
             else
             {
-                // Determine file name
+                // js / cs: save script content to file
                 string ext = scriptType == "cs" ? ".cs" : ".js";
                 string fileName = name + ext;
 
-                // Delete old file if renamed/type changed
                 if (!string.IsNullOrEmpty(_editingScript.ScriptFileName) &&
                     _editingScript.ScriptFileName != fileName)
                 {
@@ -336,7 +389,6 @@ namespace AltRunSharp
 
                 _editingScript.ScriptFileName = fileName;
 
-                // Save script content
                 string scriptsDir = GetScriptsDir();
                 Directory.CreateDirectory(scriptsDir);
                 File.WriteAllText(Path.Combine(scriptsDir, fileName), ScriptContentBox.Text);
@@ -345,6 +397,18 @@ namespace AltRunSharp
             RefreshScriptList();
             SaveConfig();
             MessageBox.Show("已保存。", "AltRunSharp", MessageBoxButton.OK, MessageBoxImage.None);
+        }
+
+        private void ScriptBrowsePath_Click(object sender, RoutedEventArgs e)
+        {
+            string scriptType = (ScriptTypeBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "js";
+            string filter = scriptType == "bat"
+                ? "批处理文件 (*.bat)|*.bat|所有文件 (*.*)|*.*"
+                : "程序 (*.exe)|*.exe|所有文件 (*.*)|*.*";
+
+            var dlg = new Microsoft.Win32.OpenFileDialog { Filter = filter, Title = "选择文件" };
+            if (dlg.ShowDialog() == true)
+                ScriptPathBox.Text = dlg.FileName;
         }
 
         // ── Workflow step management ──────────────────────────────────────────

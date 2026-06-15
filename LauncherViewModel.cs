@@ -52,6 +52,7 @@ namespace AltRunSharp
             }
             foreach (var si in _config.ScriptItems)
             {
+                if (si.ExcludeFromSearch) continue;
                 results.Add(new SearchResult
                 {
                     Name = "/" + si.Name,

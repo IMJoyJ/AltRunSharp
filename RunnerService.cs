@@ -52,25 +52,64 @@ namespace AltRunSharp
                 return;
             }
 
-            // js / cs — one-time only (service mode is handled by ServiceManager)
-            string scriptPath = Path.Combine(_dataDir, "scripts", item.ScriptFileName);
-            if (!File.Exists(scriptPath))
-            {
-                MessageBox.Show($"脚本文件不存在：{scriptPath}", "AltRunSharp",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            // js / cs / bat / exe — one-time only (service mode is handled by ServiceManager)
+            bool isExe = item.ScriptType.Equals("exe", StringComparison.OrdinalIgnoreCase);
+            bool isBat = item.ScriptType.Equals("bat", StringComparison.OrdinalIgnoreCase);
 
             string exe, baseArgs;
             if (item.ScriptType.Equals("js", StringComparison.OrdinalIgnoreCase))
             {
+                string scriptPath = Path.Combine(_dataDir, "scripts", item.ScriptFileName);
+                if (!File.Exists(scriptPath))
+                {
+                    MessageBox.Show($"脚本文件不存在：{scriptPath}", "AltRunSharp",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
                 exe = "node";
                 baseArgs = BuildArgString($"\"{scriptPath}\"", extraArgs);
             }
-            else // cs
+            else if (item.ScriptType.Equals("cs", StringComparison.OrdinalIgnoreCase))
             {
+                string scriptPath = Path.Combine(_dataDir, "scripts", item.ScriptFileName);
+                if (!File.Exists(scriptPath))
+                {
+                    MessageBox.Show($"脚本文件不存在：{scriptPath}", "AltRunSharp",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
                 exe = "dotnet";
                 baseArgs = BuildArgString($"run \"{scriptPath}\"", extraArgs);
+            }
+            else if (isBat)
+            {
+                string scriptPath = Path.Combine(_dataDir, "scripts", item.ScriptFileName);
+                if (!File.Exists(scriptPath))
+                {
+                    MessageBox.Show($"批处理文件不存在：{scriptPath}", "AltRunSharp",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                exe = "cmd.exe";
+                baseArgs = BuildArgString($"/c \"{scriptPath}\"", extraArgs);
+            }
+            else if (isExe)
+            {
+                // ScriptFileName holds the absolute path for exe type
+                if (!File.Exists(item.ScriptFileName))
+                {
+                    MessageBox.Show($"程序不存在：{item.ScriptFileName}", "AltRunSharp",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                exe = item.ScriptFileName;
+                baseArgs = BuildArgString(string.Empty, extraArgs).Trim();
+            }
+            else
+            {
+                MessageBox.Show($"不支持的脚本类型：{item.ScriptType}", "AltRunSharp",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
             if (item.Silent)
@@ -105,26 +144,43 @@ namespace AltRunSharp
                     continue;
                 }
 
-                string scriptPath = Path.Combine(_dataDir, "scripts", stepItem.ScriptFileName);
+                string stepExt = stepItem.ScriptType.ToLowerInvariant();
+                bool stepIsExe = stepExt == "exe";
+                bool stepIsBat = stepExt == "bat";
+
+                string scriptPath = stepIsExe
+                    ? stepItem.ScriptFileName
+                    : Path.Combine(_dataDir, "scripts", stepItem.ScriptFileName);
+
                 if (!File.Exists(scriptPath))
                 {
                     deadRefs.Add(stepName);
                     continue;
                 }
 
-                string exe, baseArgs;
-                if (stepItem.ScriptType.Equals("js", StringComparison.OrdinalIgnoreCase))
+                string stepExe, stepBaseArgs;
+                if (stepExt == "js")
                 {
-                    exe = "node";
-                    baseArgs = BuildArgString($"\"{scriptPath}\"", extraArgs);
+                    stepExe = "node";
+                    stepBaseArgs = BuildArgString($"\"{scriptPath}\"", extraArgs);
                 }
-                else
+                else if (stepExt == "bat")
                 {
-                    exe = "dotnet";
-                    baseArgs = BuildArgString($"run \"{scriptPath}\"", extraArgs);
+                    stepExe = "cmd.exe";
+                    stepBaseArgs = BuildArgString($"/c \"{scriptPath}\"", extraArgs);
+                }
+                else if (stepIsExe)
+                {
+                    stepExe = scriptPath;
+                    stepBaseArgs = BuildArgString(string.Empty, extraArgs).Trim();
+                }
+                else // cs
+                {
+                    stepExe = "dotnet";
+                    stepBaseArgs = BuildArgString($"run \"{scriptPath}\"", extraArgs);
                 }
 
-                steps.Add((exe, baseArgs, stepItem.Name));
+                steps.Add((stepExe, stepBaseArgs, stepItem.Name));
             }
 
             // Auto-remove dead references

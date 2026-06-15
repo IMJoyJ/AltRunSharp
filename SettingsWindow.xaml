@@ -164,7 +164,21 @@
                     <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ScriptEditPanel" Margin="20,16" IsEnabled="False">
                             <TextBlock Text="命令名称（/name）" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="ScriptNameBox" Style="{StaticResource FieldBoxStyle}" TextChanged="ScriptField_Changed"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="ScriptNameBox" Grid.Column="0"
+                                         Style="{StaticResource FieldBoxStyle}" TextChanged="ScriptField_Changed"/>
+                                <CheckBox x:Name="ExcludeFromSearchBox" Grid.Column="1"
+                                          Content="不纳入搜索"
+                                          Foreground="#6C7086" FontSize="12"
+                                          FontFamily="'Segoe UI', sans-serif"
+                                          VerticalAlignment="Center" Margin="10,0,0,0"
+                                          ToolTip="勾选后，该条目不会在搜索结果中显示"
+                                          Checked="ScriptField_Changed" Unchecked="ScriptField_Changed"/>
+                            </Grid>
 
                             <TextBlock Text="描述" Style="{StaticResource FieldLabelStyle}"/>
                             <TextBox x:Name="ScriptDescBox" Style="{StaticResource FieldBoxStyle}" TextChanged="ScriptField_Changed"/>
@@ -174,8 +188,10 @@
                             <ComboBox x:Name="ScriptTypeBox" Style="{StaticResource FieldComboStyle}"
                                       Width="200" HorizontalAlignment="Left"
                                       SelectionChanged="ScriptField_Changed">
-                                <ComboBoxItem Content="JavaScript (.js)" Tag="js"/>
+                                <ComboBoxItem Content="NodeJS (.js)" Tag="js"/>
                                 <ComboBoxItem Content="C# (.cs)" Tag="cs"/>
+                                <ComboBoxItem Content="批处理 (.bat)" Tag="bat"/>
+                                <ComboBoxItem Content="程序 (.exe)" Tag="exe"/>
                                 <ComboBoxItem Content="工作流" Tag="workflow"/>
                             </ComboBox>
 
@@ -227,17 +243,38 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <!-- ScriptCodeSection: content editor (js/cs only) -->
+                            <!-- ScriptCodeSection: content editor (js/cs) or path picker (bat/exe) -->
                             <StackPanel x:Name="ScriptCodeSection">
-                                <TextBlock Text="脚本内容" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox x:Name="ScriptContentBox"
-                                         Style="{StaticResource FieldBoxStyle}"
-                                         Height="200" AcceptsReturn="True" AcceptsTab="True"
-                                         TextWrapping="NoWrap"
-                                         FontFamily="Consolas, 'Courier New', monospace"
-                                         VerticalScrollBarVisibility="Auto"
-                                         HorizontalScrollBarVisibility="Auto"
-                                         TextChanged="ScriptField_Changed"/>
+                                <!-- Path picker row: shown for bat/exe -->
+                                <StackPanel x:Name="ScriptPathSection">
+                                    <TextBlock x:Name="ScriptPathLabel" Text="文件路径" Style="{StaticResource FieldLabelStyle}"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="ScriptPathBox" Grid.Column="0"
+                                                 Style="{StaticResource FieldBoxStyle}"
+                                                 TextChanged="ScriptField_Changed"
+                                                 ToolTip="批处理文件或程序的完整路径"/>
+                                        <Button Grid.Column="1" Content="浏览..."
+                                                Click="ScriptBrowsePath_Click"
+                                                Style="{StaticResource SmallActionButtonStyle}"
+                                                Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- Code editor: shown for js/cs -->
+                                <StackPanel x:Name="ScriptEditorSection">
+                                    <TextBlock Text="脚本内容" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBox x:Name="ScriptContentBox"
+                                             Style="{StaticResource FieldBoxStyle}"
+                                             Height="200" AcceptsReturn="True" AcceptsTab="True"
+                                             TextWrapping="NoWrap"
+                                             FontFamily="Consolas, 'Courier New', monospace"
+                                             VerticalScrollBarVisibility="Auto"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             TextChanged="ScriptField_Changed"/>
+                                </StackPanel>
                             </StackPanel>
 
                             <!-- WorkflowSection: step list (workflow only) -->

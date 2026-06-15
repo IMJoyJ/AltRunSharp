@@ -28,13 +28,13 @@ namespace AltRunSharp
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        /// <summary>"js" | "cs" | "workflow"</summary>
+        /// <summary>"js" | "cs" | "bat" | "exe" | "workflow"</summary>
         public string ScriptType { get; set; } = "js";
-        /// <summary>"once" | "service" — only applies to js/cs types</summary>
+        /// <summary>"once" | "service" — only applies to js/cs/bat/exe types</summary>
         public string LaunchMode { get; set; } = "once";
         /// <summary>true = silent/log, false = output window — only for LaunchMode "once"</summary>
         public bool Silent { get; set; } = false;
-        /// <summary>Filename under data/scripts/, e.g. "test_args.js" — only for js/cs</summary>
+        /// <summary>Filename under data/scripts/ (js/cs/bat), or absolute path (exe)</summary>
         public string ScriptFileName { get; set; } = string.Empty;
         /// <summary>Service: auto-start when host app launches (host manages this, no registry write)</summary>
         public bool BootStart { get; set; } = false;
@@ -42,6 +42,8 @@ namespace AltRunSharp
         public List<string> WorkflowSteps { get; set; } = new List<string>();
         /// <summary>Additional search aliases. Matching triggers autocomplete back to /Name.</summary>
         public List<string> Aliases { get; set; } = new List<string>();
+        /// <summary>If true, this item is hidden from launcher search results.</summary>
+        public bool ExcludeFromSearch { get; set; } = false;
     }
 
     public class ScheduledTask
