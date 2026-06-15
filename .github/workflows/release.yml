@@ -13,6 +13,7 @@ jobs:
     name: Build ${{ matrix.rid }} (${{ matrix.variant }})
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - rid: win-x64
@@ -45,21 +46,13 @@ jobs:
         env:
           CI: true
         run: |
-          $selfContained = "${{ matrix.self_contained }}"
-          $extraArgs = @(
-            "AltRunSharp.csproj",
-            "-c", "Release",
-            "-r", "${{ matrix.rid }}",
-            "--self-contained", $selfContained,
-            "-p:PublishSingleFile=true",
-            "-p:PublishReadyToRun=true",
-            "-o", "publish/${{ matrix.rid }}-${{ matrix.variant }}"
-          )
-          if ($selfContained -eq "true") {
-            $extraArgs += "-p:EnableCompressionInSingleFile=true"
-            $extraArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
-          }
-          dotnet publish @extraArgs
+          dotnet publish AltRunSharp.csproj `
+            -c Release `
+            -r ${{ matrix.rid }} `
+            --self-contained ${{ matrix.self_contained }} `
+            -p:PublishSingleFile=true `
+            -p:PublishReadyToRun=true `
+            -o publish/${{ matrix.rid }}-${{ matrix.variant }}
 
       - name: Rename artifact
         run: |

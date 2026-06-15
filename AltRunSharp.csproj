@@ -7,13 +7,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>icon.ico</ApplicationIcon>
-    <!-- Publish: single self-contained exe with ReadyToRun precompilation.
-         WPF is NOT compatible with PublishTrimmed, so we do NOT use it. -->
+    <!-- Publish: single-file exe with ReadyToRun precompilation.
+         WPF is NOT compatible with PublishTrimmed, so we do NOT use it.
+         SelfContained is intentionally NOT set here — let the publish
+         command control it so both standalone and framework-dependent
+         builds work correctly. -->
     <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Compression only works for self-contained bundles (NETSDK1176). -->
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(SelfContained)' == 'true'">true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
