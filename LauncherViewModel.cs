@@ -63,7 +63,7 @@ namespace AltRunSharp
             }
 
             if (string.IsNullOrEmpty(query))
-                return results;
+                return new List<SearchResult>();
 
             // Filter: check if query is a substring of Name, Description, Path, or any Alias (case-insensitive)
             return results
