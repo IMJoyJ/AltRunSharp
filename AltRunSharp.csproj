@@ -7,6 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <!-- Publish: single self-contained exe with ReadyToRun precompilation.
+         WPF is NOT compatible with PublishTrimmed, so we do NOT use it. -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,8 +31,11 @@
     <None Remove="data\**" />
   </ItemGroup>
 
-  <Target Name="RenameLockedExe" BeforeTargets="BeforeBuild" Condition="Exists('$(TargetDir)$(TargetName).exe')">
+  <!-- Dev-only: rename locked exe before rebuild (local only, skipped in CI) -->
+  <Target Name="RenameLockedExe" BeforeTargets="BeforeBuild"
+          Condition="'$(CI)' != 'true' And Exists('$(TargetDir)$(TargetName).exe')">
     <Exec Command="powershell -Command &quot;try { Rename-Item -Path '$(TargetDir)$(TargetName).exe' -NewName ('$(TargetName).exe.old.' + [Guid]::NewGuid().ToString()) -ErrorAction SilentlyContinue } catch {}&quot;" />
   </Target>
 
 </Project>
+
