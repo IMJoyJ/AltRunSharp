@@ -10,14 +10,26 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.rid }}
+    name: Build ${{ matrix.rid }} (${{ matrix.variant }})
     runs-on: windows-latest
     strategy:
       matrix:
         include:
           - rid: win-x64
+            variant: standalone
+            self_contained: "true"
+            artifact: AltRunSharp-x64-standalone.exe
+          - rid: win-x86
+            variant: standalone
+            self_contained: "true"
+            artifact: AltRunSharp-x86-standalone.exe
+          - rid: win-x64
+            variant: framework-dependent
+            self_contained: "false"
             artifact: AltRunSharp-x64.exe
           - rid: win-x86
+            variant: framework-dependent
+            self_contained: "false"
             artifact: AltRunSharp-x86.exe
 
     steps:
@@ -29,23 +41,29 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Publish (${{ matrix.rid }})
+      - name: Publish (${{ matrix.rid }}, ${{ matrix.variant }})
         env:
           CI: true
         run: |
-          dotnet publish AltRunSharp.csproj `
-            -c Release `
-            -r ${{ matrix.rid }} `
-            --self-contained true `
-            -p:PublishSingleFile=true `
-            -p:PublishReadyToRun=true `
-            -p:EnableCompressionInSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
-            -o publish/${{ matrix.rid }}
+          $selfContained = "${{ matrix.self_contained }}"
+          $extraArgs = @(
+            "AltRunSharp.csproj",
+            "-c", "Release",
+            "-r", "${{ matrix.rid }}",
+            "--self-contained", $selfContained,
+            "-p:PublishSingleFile=true",
+            "-p:PublishReadyToRun=true",
+            "-o", "publish/${{ matrix.rid }}-${{ matrix.variant }}"
+          )
+          if ($selfContained -eq "true") {
+            $extraArgs += "-p:EnableCompressionInSingleFile=true"
+            $extraArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
+          }
+          dotnet publish @extraArgs
 
       - name: Rename artifact
         run: |
-          Move-Item publish/${{ matrix.rid }}/AltRunSharp.exe ${{ matrix.artifact }}
+          Move-Item publish/${{ matrix.rid }}-${{ matrix.variant }}/AltRunSharp.exe ${{ matrix.artifact }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -68,8 +86,43 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
-          generate_release_notes: true
+          name: AltRunSharp ${{ github.ref_name }}
+          body: |
+            ## AltRunSharp ${{ github.ref_name }}
+
+            ### 下载说明 / Download Guide
+
+            本次发布提供 **4 个版本**，请根据你的系统架构和环境选择：
+
+            | 文件 | 架构 | 类型 | 大小 | 说明 |
+            |------|------|------|------|------|
+            | `AltRunSharp-x64-standalone.exe` | x64 | 独立版 | ~67 MB | 无需安装 .NET，开箱即用 |
+            | `AltRunSharp-x86-standalone.exe` | x86 | 独立版 | ~61 MB | 无需安装 .NET，兼容 32 位系统 |
+            | `AltRunSharp-x64.exe` | x64 | 框架依赖版 | ~1 MB | 需要已安装 [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) |
+            | `AltRunSharp-x86.exe` | x86 | 框架依赖版 | ~1 MB | 需要已安装 .NET 10 Runtime，兼容 32 位系统 |
+
+            > **不知道选哪个？**
+            > - 如果你没有安装过 .NET，选 **standalone（独立版）**。
+            > - 如果你已安装 .NET 10 Runtime，选**框架依赖版**，体积更小，升级更方便。
+            > - 大多数现代 PC 选 **x64**；老旧或特殊 32 位系统选 **x86**。
+
+            ---
+
+            Four builds are provided. Choose based on your system architecture and environment:
+
+            | File | Arch | Type | Size | Notes |
+            |------|------|------|------|-------|
+            | `AltRunSharp-x64-standalone.exe` | x64 | Standalone | ~67 MB | No .NET install required, plug and play |
+            | `AltRunSharp-x86-standalone.exe` | x86 | Standalone | ~61 MB | No .NET install required, 32-bit compatible |
+            | `AltRunSharp-x64.exe` | x64 | Framework-dependent | ~1 MB | Requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) |
+            | `AltRunSharp-x86.exe` | x86 | Framework-dependent | ~1 MB | Requires .NET 10 Runtime, 32-bit compatible |
+
+            > **Not sure which to pick?**
+            > - No .NET installed → grab a **standalone** build.
+            > - .NET 10 Runtime already installed → **framework-dependent** is smaller and easier to update.
+            > - Most modern PCs → **x64**; legacy or specialized 32-bit systems → **x86**.
           files: |
+            artifacts/AltRunSharp-x64-standalone.exe
+            artifacts/AltRunSharp-x86-standalone.exe
             artifacts/AltRunSharp-x64.exe
             artifacts/AltRunSharp-x86.exe
