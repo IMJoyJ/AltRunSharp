@@ -139,6 +139,13 @@ namespace AltRunSharp
             Microsoft.Win32.SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
 
             this.Dispatcher.BeginInvoke(new Action(HideWindow), DispatcherPriority.Background);
+
+            // Handle --add-launch passed on the original command line
+            // (when app was NOT already running at context-menu click time)
+            var startupArgs = App.StartupArgs;
+            if (startupArgs != null && startupArgs.Length >= 2 && startupArgs[0] == "--add-launch")
+                this.Dispatcher.BeginInvoke(() => HandleAddLaunch(startupArgs[1]),
+                    DispatcherPriority.Background);
         }
 
         // ── Tray ─────────────────────────────────────────────────────────────
@@ -197,7 +204,106 @@ namespace AltRunSharp
             }
         }
 
+        // ── IPC / context-menu add ────────────────────────────────────────────
+
+        /// <summary>Called by App when a second instance forwards its args via named pipe.</summary>
+        public void HandleIpcArgs(string[] parts)
+        {
+            if (parts.Length >= 2 && parts[0] == "--add-launch")
+                HandleAddLaunch(parts[1]);
+        }
+
+        private static readonly HashSet<string> ScriptExtensions =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".js", ".cs" };
+
+        private void HandleAddLaunch(string path)
+        {
+            if (!File.Exists(path) && !Directory.Exists(path))
+            {
+                MessageBox.Show($"路径不存在：\n{path}", "AltRunSharp",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string ext = Path.GetExtension(path);
+
+            if (ScriptExtensions.Contains(ext))
+            {
+                var result = MessageBox.Show(
+                    $"检测到脚本文件：\n{path}\n\n" +
+                    "是否作为【脚本】添加？\n" +
+                    "（选'否'则作为普通【快速启动】添加）",
+                    "AltRunSharp — 添加项目",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Cancel) return;
+                if (result == MessageBoxResult.Yes) { AddAsScript(path, ext); return; }
+            }
+
+            AddAsLaunchItem(path);
+        }
+
+        private void AddAsLaunchItem(string path)
+        {
+            string name = Path.GetFileNameWithoutExtension(path);
+            if (_config.LaunchItems.Exists(x =>
+                    string.Equals(x.Path, path, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show($"已存在相同路径的快速启动项：\n{path}", "AltRunSharp",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            _config.LaunchItems.Add(new LaunchItem { Name = name, Path = path });
+            _configService.SaveConfig(_config);
+            MessageBox.Show($"已添加快速启动：{name}", "AltRunSharp",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void AddAsScript(string path, string ext)
+        {
+            string name = Path.GetFileNameWithoutExtension(path);
+            string scriptType = ext.TrimStart('.').ToLowerInvariant();
+            string fileName = Path.GetFileName(path);
+
+            string scriptsDir = Path.Combine(Path.GetDirectoryName(_configPath)!, "scripts");
+            Directory.CreateDirectory(scriptsDir);
+            string dest = Path.Combine(scriptsDir, fileName);
+            if (!string.Equals(path, dest, StringComparison.OrdinalIgnoreCase))
+            {
+                if (File.Exists(dest))
+                {
+                    var overwrite = MessageBox.Show(
+                        $"脚本目录中已有同名文件：{fileName}\n是否覆盖？",
+                        "AltRunSharp", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (overwrite != MessageBoxResult.Yes) return;
+                }
+                File.Copy(path, dest, overwrite: true);
+            }
+
+            if (_config.ScriptItems.Exists(x =>
+                    string.Equals(x.ScriptFileName, fileName, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show($"已存在相同脚本文件的条目：{fileName}", "AltRunSharp",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            _config.ScriptItems.Add(new ScriptItem
+            {
+                Name = name,
+                ScriptType = scriptType,
+                ScriptFileName = fileName,
+                LaunchMode = "once"
+            });
+            _configService.SaveConfig(_config);
+            MessageBox.Show($"已添加脚本：{name} ({scriptType.ToUpperInvariant()})", "AltRunSharp",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         // ── Config ───────────────────────────────────────────────────────────
+
 
         private void InitConfigWatcher()
         {
