@@ -324,9 +324,7 @@ namespace AltRunSharp
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
+                CreateNoWindow = true
             };
 
             try
@@ -376,8 +374,7 @@ namespace AltRunSharp
                     FileName = exe, Arguments = args,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
-                    CreateNoWindow = true,
-                    StandardOutputEncoding = Encoding.UTF8
+                    CreateNoWindow = true
                 };
                 var proc = Process.Start(psi)!;
                 string stdout = proc.StandardOutput.ReadToEnd().Trim();
