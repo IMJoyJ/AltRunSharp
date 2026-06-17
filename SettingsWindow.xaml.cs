@@ -213,8 +213,8 @@ namespace AltRunSharp
 
             string scriptType = item?.ScriptType?.ToLowerInvariant() ?? "js";
 
-            // Path box & extra args (bat/exe)
-            if (scriptType is "bat" or "exe")
+            // Path box & extra args (exe / 启动文件)
+            if (scriptType == "exe")
             {
                 ScriptPathBox.Text = item?.ScriptFileName ?? string.Empty;
                 ScriptExtraArgsBox.Text = item?.ExtraArgs ?? string.Empty;
@@ -225,8 +225,8 @@ namespace AltRunSharp
                 ScriptExtraArgsBox.Text = string.Empty;
             }
 
-            // Script content (js/cs only)
-            if (item != null && scriptType is "js" or "cs" && !string.IsNullOrEmpty(item.ScriptFileName))
+            // Script content (js/cs/bat)
+            if (item != null && scriptType is "js" or "cs" or "bat" && !string.IsNullOrEmpty(item.ScriptFileName))
             {
                 string path = Path.Combine(GetScriptsDir(), item.ScriptFileName);
                 ScriptContentBox.Text = File.Exists(path) ? File.ReadAllText(path) : string.Empty;
@@ -255,7 +255,7 @@ namespace AltRunSharp
             string scriptType = (ScriptTypeBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "js";
             string launchMode = (LaunchModeBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "once";
             bool isWorkflow  = scriptType == "workflow";
-            bool isPathBased = scriptType is "bat" or "exe";   // bat/exe use path picker, not code editor
+            bool isPathBased = scriptType == "exe";   // exe uses path picker; js/cs/bat use code editor
             bool isService   = !isWorkflow && launchMode == "service";
             bool isOnce      = !isWorkflow && !isService;
 
@@ -344,7 +344,7 @@ namespace AltRunSharp
                 // WorkflowSteps already updated live via Add/Remove buttons
                 _editingScript.ScriptFileName = string.Empty;
             }
-            else if (scriptType is "bat" or "exe")
+            else if (scriptType == "exe")
             {
                 string pickedPath = ScriptPathBox.Text.Trim();
                 if (string.IsNullOrEmpty(pickedPath))
@@ -352,39 +352,12 @@ namespace AltRunSharp
                     MessageBox.Show("请填写文件路径。", "AltRunSharp");
                     return;
                 }
-
-                if (scriptType == "bat")
-                {
-                    // Copy bat file into data/scripts/ and track by filename
-                    string fileName = name + ".bat";
-                    string scriptsDir = GetScriptsDir();
-                    Directory.CreateDirectory(scriptsDir);
-                    string dest = Path.Combine(scriptsDir, fileName);
-
-                    // Delete old if renamed/type changed
-                    if (!string.IsNullOrEmpty(_editingScript.ScriptFileName) &&
-                        _editingScript.ScriptFileName != fileName)
-                    {
-                        try { File.Delete(Path.Combine(scriptsDir, _editingScript.ScriptFileName)); } catch { }
-                    }
-
-                    // If user edited path to a new source file, copy it; otherwise keep existing
-                    if (!string.Equals(pickedPath, dest, StringComparison.OrdinalIgnoreCase) &&
-                        File.Exists(pickedPath))
-                    {
-                        File.Copy(pickedPath, dest, overwrite: true);
-                    }
-                    _editingScript.ScriptFileName = fileName;
-                }
-                else // exe: store absolute path directly in ScriptFileName
-                {
-                    _editingScript.ScriptFileName = pickedPath;
-                }
+                _editingScript.ScriptFileName = pickedPath;
             }
             else
             {
-                // js / cs: save script content to file
-                string ext = scriptType == "cs" ? ".cs" : ".js";
+                // js / cs / bat: save script content to file
+                string ext = scriptType switch { "cs" => ".cs", "bat" => ".bat", _ => ".js" };
                 string fileName = name + ext;
 
                 if (!string.IsNullOrEmpty(_editingScript.ScriptFileName) &&
@@ -408,11 +381,7 @@ namespace AltRunSharp
 
         private void ScriptBrowsePath_Click(object sender, RoutedEventArgs e)
         {
-            string scriptType = (ScriptTypeBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "js";
-            string filter = scriptType == "bat"
-                ? "批处理文件 (*.bat)|*.bat|所有文件 (*.*)|*.*"
-                : "程序 (*.exe)|*.exe|所有文件 (*.*)|*.*";
-
+            string filter = "所有文件 (*.*)|*.*|程序 (*.exe)|*.exe";
             var dlg = new Microsoft.Win32.OpenFileDialog { Filter = filter, Title = "选择文件" };
             if (dlg.ShowDialog() == true)
                 ScriptPathBox.Text = dlg.FileName;

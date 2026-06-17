@@ -191,7 +191,7 @@
                                 <ComboBoxItem Content="NodeJS (.js)" Tag="js"/>
                                 <ComboBoxItem Content="C# (.cs)" Tag="cs"/>
                                 <ComboBoxItem Content="批处理 (.bat)" Tag="bat"/>
-                                <ComboBoxItem Content="程序 (.exe)" Tag="exe"/>
+                                <ComboBoxItem Content="启动文件" Tag="exe"/>
                                 <ComboBoxItem Content="工作流" Tag="workflow"/>
                             </ComboBox>
 
@@ -249,9 +249,9 @@
                                 </Grid>
                             </StackPanel>
 
-                            <!-- ScriptCodeSection: content editor (js/cs) or path picker (bat/exe) -->
+                            <!-- ScriptCodeSection: content editor (js/cs/bat) or path picker (exe) -->
                             <StackPanel x:Name="ScriptCodeSection">
-                                <!-- Path picker row: shown for bat/exe -->
+                                <!-- Path picker row: shown for exe (启动文件) -->
                                 <StackPanel x:Name="ScriptPathSection">
                                     <TextBlock x:Name="ScriptPathLabel" Text="文件路径" Style="{StaticResource FieldLabelStyle}"/>
                                     <Grid>
