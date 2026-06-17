@@ -472,11 +472,15 @@ namespace AltRunSharp
         {
             if (_editingScript == null) return;
 
+            // Capture reference before save — ScriptSave_Click refreshes the list,
+            // which resets selection and nulls _editingScript.
+            var scriptToStart = _editingScript;
+
             // Save first to ensure latest config is used
             ScriptSave_Click(sender, e);
 
             string extraArgs = ServiceArgsBox.Text.Trim();
-            _serviceManager.StartService(_editingScript, extraArgs);
+            _serviceManager.StartService(scriptToStart, extraArgs);
 
             // Switch to service management page to show the running instance
             ShowPage("service");
