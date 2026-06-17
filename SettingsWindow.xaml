@@ -230,8 +230,8 @@
                                            Foreground="#F9E2AF" FontSize="11" TextWrapping="Wrap"
                                            FontFamily="'Segoe UI', sans-serif"
                                            Margin="18,0,0,6" Visibility="Collapsed"/>
-                                <TextBlock Text="额外启动参数（可选）" Style="{StaticResource FieldLabelStyle}"
-                                           ToolTip="传入此次启动的参数。留空则无参数。同一脚本可用不同参数多次启动，每次为独立服务实例。"/>
+                                <TextBlock Text="本次附加参数（可选）" Style="{StaticResource FieldLabelStyle}"
+                                           ToolTip="本次启动额外追加的参数（在固定启动参数之后）。同一脚本可用不同参数多次启动，每次为独立服务实例。"/>
                                 <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -268,6 +268,13 @@
                                                 Style="{StaticResource SmallActionButtonStyle}"
                                                 Margin="6,0,0,0" VerticalAlignment="Center"/>
                                     </Grid>
+                                    <TextBlock Text="固定启动参数（可选）" Style="{StaticResource FieldLabelStyle}"
+                                               Margin="0,6,0,0"
+                                               ToolTip="始终附加在路径之后的参数。启动服务时手动输入的参数会追加在此之后。"/>
+                                    <TextBox x:Name="ScriptExtraArgsBox"
+                                             Style="{StaticResource FieldBoxStyle}"
+                                             TextChanged="ScriptField_Changed"
+                                             ToolTip="例：script.js --port 8080"/>
                                 </StackPanel>
                                 <!-- Code editor: shown for js/cs -->
                                 <StackPanel x:Name="ScriptEditorSection">

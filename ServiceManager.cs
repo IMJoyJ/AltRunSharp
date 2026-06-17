@@ -78,7 +78,7 @@ namespace AltRunSharp
             foreach (var s in allScripts.Where(s =>
                 s.LaunchMode == "service" && s.BootStart && s.ScriptType != "workflow"))
             {
-                StartService(s);
+                StartService(s, s.ExtraArgs);
             }
         }
 

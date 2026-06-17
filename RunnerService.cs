@@ -56,6 +56,13 @@ namespace AltRunSharp
             }
 
             // js / cs / bat / exe — one-time only (service mode is handled by ServiceManager)
+            // Prepend fixed extra args (from config) before user-provided args
+            if (!string.IsNullOrWhiteSpace(item.ExtraArgs))
+            {
+                var fixedParts = ScriptArgsParser.Parse(item.ExtraArgs);
+                extraArgs = fixedParts.Concat(extraArgs).ToArray();
+            }
+
             bool isExe = item.ScriptType.Equals("exe", StringComparison.OrdinalIgnoreCase);
             bool isBat = item.ScriptType.Equals("bat", StringComparison.OrdinalIgnoreCase);
 

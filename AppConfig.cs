@@ -44,6 +44,8 @@ namespace AltRunSharp
         public List<string> Aliases { get; set; } = new List<string>();
         /// <summary>If true, this item is hidden from launcher search results.</summary>
         public bool ExcludeFromSearch { get; set; } = false;
+        /// <summary>Fixed extra arguments appended after the script/exe path. Saved with config.</summary>
+        public string ExtraArgs { get; set; } = string.Empty;
     }
 
     public class ScheduledTask

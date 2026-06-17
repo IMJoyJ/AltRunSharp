@@ -213,11 +213,17 @@ namespace AltRunSharp
 
             string scriptType = item?.ScriptType?.ToLowerInvariant() ?? "js";
 
-            // Path box (bat/exe)
+            // Path box & extra args (bat/exe)
             if (scriptType is "bat" or "exe")
+            {
                 ScriptPathBox.Text = item?.ScriptFileName ?? string.Empty;
+                ScriptExtraArgsBox.Text = item?.ExtraArgs ?? string.Empty;
+            }
             else
+            {
                 ScriptPathBox.Text = string.Empty;
+                ScriptExtraArgsBox.Text = string.Empty;
+            }
 
             // Script content (js/cs only)
             if (item != null && scriptType is "js" or "cs" && !string.IsNullOrEmpty(item.ScriptFileName))
@@ -331,6 +337,7 @@ namespace AltRunSharp
             _editingScript.BootStart = bootStart;
             _editingScript.ExcludeFromSearch = excludeFromSearch;
             _editingScript.Aliases = ParseLines(ScriptAliasBox.Text);
+            _editingScript.ExtraArgs = ScriptExtraArgsBox.Text.Trim();
 
             if (scriptType == "workflow")
             {
@@ -479,8 +486,15 @@ namespace AltRunSharp
             // Save first to ensure latest config is used
             ScriptSave_Click(sender, e);
 
-            string extraArgs = ServiceArgsBox.Text.Trim();
-            _serviceManager.StartService(scriptToStart, extraArgs);
+            // Combine fixed extra args (saved in config) + manual args (entered at launch)
+            string fixedArgs = scriptToStart.ExtraArgs ?? "";
+            string manualArgs = ServiceArgsBox.Text.Trim();
+            string combinedArgs = string.IsNullOrWhiteSpace(fixedArgs)
+                ? manualArgs
+                : string.IsNullOrWhiteSpace(manualArgs)
+                    ? fixedArgs
+                    : $"{fixedArgs} {manualArgs}";
+            _serviceManager.StartService(scriptToStart, combinedArgs);
 
             // Switch to service management page to show the running instance
             ShowPage("service");
