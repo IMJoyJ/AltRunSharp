@@ -63,6 +63,7 @@ public partial class App : Application
             Environment.Exit(1);
         };
 
+        UpdateService.Cleanup();
         base.OnStartup(e);
     }
 

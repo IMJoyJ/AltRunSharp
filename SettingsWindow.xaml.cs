@@ -540,6 +540,9 @@ namespace AltRunSharp
             HotkeyRecordBox.Text = _config.Hotkey ?? "Alt+R";
             StartupToggle.IsChecked = AdminHelper.IsStartupEnabled();
             ContextMenuToggle.IsChecked = AdminHelper.IsContextMenuEnabled();
+            CurrentVersionRun.Text = UpdateService.CurrentVersion;
+            UpdateStatusText.Text = "";
+            UpdateProgress.Visibility = Visibility.Collapsed;
             _suppressFieldEvents = false;
         }
 
@@ -675,6 +678,60 @@ namespace AltRunSharp
                 Key.OemPlus         => "=",
                 _ => string.Empty
             };
+        }
+
+        // ── Update ───────────────────────────────────────────────────────────
+
+        private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            CheckUpdateBtn.IsEnabled = false;
+            UpdateStatusText.Text = "正在检查更新...";
+            UpdateStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x6C, 0x70, 0x86));
+            UpdateProgress.Visibility = Visibility.Collapsed;
+
+            try
+            {
+                var info = await UpdateService.CheckAsync();
+                if (info == null)
+                {
+                    UpdateStatusText.Text = "已是最新版本。";
+                    UpdateStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
+                    CheckUpdateBtn.IsEnabled = true;
+                    return;
+                }
+
+                var result = MessageBox.Show(
+                    $"发现新版本 v{info.Version}（当前 v{UpdateService.CurrentVersion}）\n\n是否立即下载并更新？",
+                    "AltRunSharp 更新",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+
+                if (result != MessageBoxResult.Yes)
+                {
+                    UpdateStatusText.Text = $"新版本 v{info.Version} 可用，已跳过。";
+                    CheckUpdateBtn.IsEnabled = true;
+                    return;
+                }
+
+                UpdateStatusText.Text = "正在下载更新...";
+                UpdateProgress.Visibility = Visibility.Visible;
+                UpdateProgress.Value = 0;
+
+                await UpdateService.ApplyAsync(info, progress =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        UpdateProgress.Value = progress;
+                        UpdateStatusText.Text = $"正在下载更新... {progress}%";
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                UpdateStatusText.Text = $"检查更新失败：{ex.Message}";
+                UpdateStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                CheckUpdateBtn.IsEnabled = true;
+            }
         }
 
         // ── Startup / Context menu toggles ────────────────────────────────────
