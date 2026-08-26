@@ -9,6 +9,8 @@ namespace AltRunSharp
         public string ClickMode { get; set; } = "single";
         public bool StartupEnabled { get; set; } = false;
         public bool ContextMenuEnabled { get; set; } = false;
+        /// <summary>When true, the launcher will not popup while a fullscreen app (game) is focused.</summary>
+        public bool SuppressWhenFullscreen { get; set; } = false;
         public List<LaunchItem> LaunchItems { get; set; } = new List<LaunchItem>();
         public List<ScriptItem> ScriptItems { get; set; } = new List<ScriptItem>();
         public List<ScheduledTask> ScheduledTasks { get; set; } = new List<ScheduledTask>();

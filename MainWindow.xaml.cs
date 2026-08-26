@@ -85,6 +85,8 @@ namespace AltRunSharp
 
         [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT pt);
         [DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
+        [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+        [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
         [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO mi);
         [DllImport("shcore.dll")] private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
@@ -339,6 +341,40 @@ namespace AltRunSharp
 
         // ── Window show/hide ─────────────────────────────────────────────────
 
+        /// <summary>前台窗口是否铺满其所在显示器（无边框与独占全屏都满足）。排除本进程窗口与桌面/任务栏（Progman/WorkerW/Shell_TrayWnd/Shell_SecondaryTrayWnd）。</summary>
+        private bool IsForegroundFullscreen()
+        {
+            IntPtr fgHwnd = GetForegroundWindow();
+            if (fgHwnd == IntPtr.Zero) return false;
+
+            GetWindowThreadProcessId(fgHwnd, out uint processId);
+            uint currentPid = (uint)Environment.ProcessId;
+            if (processId == currentPid) return false;
+
+            var sb = new StringBuilder(256);
+            if (GetClassName(fgHwnd, sb, 256) > 0)
+            {
+                string cls = sb.ToString();
+                if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd")
+                    return false;
+            }
+
+            const uint MONITOR_DEFAULTTONEAREST = 2;
+            IntPtr hMonitor = MonitorFromWindow(fgHwnd, MONITOR_DEFAULTTONEAREST);
+            if (hMonitor == IntPtr.Zero) return false;
+
+            var mi = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
+            if (!GetMonitorInfo(hMonitor, ref mi)) return false;
+
+            if (!GetWindowRect(fgHwnd, out RECT rcWin)) return false;
+
+            // 四边容差 2px 内铺满即视为全屏
+            return rcWin.Left <= mi.rcMonitor.Left + 2 &&
+                   rcWin.Top <= mi.rcMonitor.Top + 2 &&
+                   rcWin.Right >= mi.rcMonitor.Right - 2 &&
+                   rcWin.Bottom >= mi.rcMonitor.Bottom - 2;
+        }
+
         private void ToggleWindow()
         {
             if (this.Visibility == Visibility.Visible)
@@ -349,6 +385,11 @@ namespace AltRunSharp
 
         private void ShowLauncher()
         {
+            if (this.Visibility != Visibility.Visible &&
+                _config.SuppressWhenFullscreen &&
+                IsForegroundFullscreen())
+                return;
+
             if (this.Visibility == Visibility.Visible && this.IsActive)
             {
                 InputTextBox.Focus();
