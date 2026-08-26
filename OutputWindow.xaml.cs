@@ -9,6 +9,18 @@ namespace AltRunSharp
 {
     public partial class OutputWindow : Window
     {
+        private static readonly SolidColorBrush DefaultBrush;
+        private static readonly SolidColorBrush ErrorBrush;
+
+        static OutputWindow()
+        {
+            DefaultBrush = new SolidColorBrush(Color.FromRgb(0xCD, 0xD6, 0xF4));
+            DefaultBrush.Freeze();
+            ErrorBrush = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+            ErrorBrush.Freeze();
+        }
+
+        private readonly AnsiParser _ansi = new();
         private Process? _process;
         private bool _killed = false;
 
@@ -139,13 +151,34 @@ namespace AltRunSharp
         {
             Dispatcher.Invoke(() =>
             {
-                var run = new System.Windows.Documents.Run(text + "\n")
+                var segments = _ansi.ParseLine(text);
+                foreach (var seg in segments)
                 {
-                    Foreground = isError
-                        ? new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8))
-                        : new SolidColorBrush(Color.FromRgb(0xCD, 0xD6, 0xF4))
-                };
-                OutputText.Inlines.Add(run);
+                    if (string.IsNullOrEmpty(seg.Text)) continue;
+
+                    var run = new System.Windows.Documents.Run(seg.Text)
+                    {
+                        Foreground = seg.Foreground.HasValue
+                            ? new SolidColorBrush(seg.Foreground.Value)
+                            : (isError ? ErrorBrush : DefaultBrush),
+                        FontWeight = seg.Bold ? FontWeights.Bold : FontWeights.Normal,
+                        FontStyle = seg.Italic ? FontStyles.Italic : FontStyles.Normal
+                    };
+
+                    if (seg.Background.HasValue)
+                    {
+                        run.Background = new SolidColorBrush(seg.Background.Value);
+                    }
+
+                    if (seg.Underline)
+                    {
+                        run.TextDecorations = TextDecorations.Underline;
+                    }
+
+                    OutputText.Inlines.Add(run);
+                }
+
+                OutputText.Inlines.Add(new System.Windows.Documents.Run("\n"));
                 OutputScroll.ScrollToEnd();
             });
         }
