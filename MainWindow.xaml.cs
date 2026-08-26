@@ -478,6 +478,10 @@ namespace AltRunSharp
                     }
                 }
             }
+            else if (result.Kind == "builtin" && result.BuiltinCommand == "panel")
+            {
+                OpenSettings();
+            }
         }
 
         // ── Keyboard handling ─────────────────────────────────────────────────
