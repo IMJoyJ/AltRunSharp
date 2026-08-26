@@ -262,7 +262,13 @@
                                                       Mode=TwoWay}"
                                                   Background="Transparent"
                                                   BorderThickness="0"
-                                                  Focusable="False"/>
+                                                  Focusable="False">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
                                 </Grid>
                             </Border>
                             <!-- Dropdown popup -->
