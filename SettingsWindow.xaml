@@ -101,18 +101,22 @@
                             <TextBlock Text="描述" Style="{StaticResource FieldLabelStyle}"/>
                             <TextBox x:Name="LaunchDescBox" Style="{StaticResource FieldBoxStyle}" TextChanged="LaunchField_Changed"/>
 
-                            <TextBlock Text="程序路径" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBlock Text="程序路径 / 网址" Style="{StaticResource FieldLabelStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="LaunchPathBox" Grid.Column="0" Style="{StaticResource FieldBoxStyle}" TextChanged="LaunchField_Changed"/>
+                                <TextBox x:Name="LaunchPathBox" Grid.Column="0" Style="{StaticResource FieldBoxStyle}"
+                                         TextChanged="LaunchField_Changed"
+                                         ToolTip="支持 http:// 或 https:// 网址，将使用默认浏览器打开"/>
                                 <Button Grid.Column="1" Content="浏览" Click="LaunchBrowse_Click"
                                         Style="{StaticResource SmallActionButtonStyle}" Margin="8,0,0,0" VerticalAlignment="Bottom"/>
                             </Grid>
 
                             <TextBlock Text="启动参数（可选）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBlock Text="网址类型条目忽略启动参数" Foreground="#6C7086" FontSize="11" Margin="0,0,0,4"
+                                       FontFamily="'Segoe UI', sans-serif"/>
                             <TextBox x:Name="LaunchArgsBox" Style="{StaticResource FieldBoxStyle}" TextChanged="LaunchField_Changed"/>
 
                             <TextBlock Text="别名（每行一个，用于搜索匹配）" Style="{StaticResource FieldLabelStyle}"/>
@@ -622,7 +626,7 @@
                                           Unchecked="StartupToggle_Unchecked"/>
                         </Grid>
 
-                        <Grid>
+                        <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -638,6 +642,24 @@
                                           Style="{StaticResource ToggleSwitchStyle}"
                                           Checked="ContextMenuToggle_Checked"
                                           Unchecked="ContextMenuToggle_Unchecked"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="全屏应用时不弹出（游戏模式）" Foreground="#CDD6F4" FontSize="14"
+                                           FontFamily="'Segoe UI', sans-serif"/>
+                                <TextBlock Text="检测到前台应用全屏（无边框或独占全屏，如游戏）时，快捷键与托盘点击不再弹出启动器"
+                                           Foreground="#6C7086" FontSize="11"
+                                           FontFamily="'Segoe UI', sans-serif"/>
+                            </StackPanel>
+                            <ToggleButton x:Name="FullscreenToggle" Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          Checked="FullscreenToggle_Checked"
+                                          Unchecked="FullscreenToggle_Unchecked"/>
                         </Grid>
 
                         <Rectangle Height="1" Fill="#313244" Margin="0,16,0,16"/>

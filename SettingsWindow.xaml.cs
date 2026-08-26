@@ -160,9 +160,28 @@ namespace AltRunSharp
         private void LaunchSave_Click(object sender, RoutedEventArgs e)
         {
             if (_editingLaunch == null) return;
-            _editingLaunch.Name = LaunchNameBox.Text.Trim();
+            string path = LaunchPathBox.Text.Trim();
+            string name = LaunchNameBox.Text.Trim();
+
+            if ((string.IsNullOrWhiteSpace(name) || name == "新程序") &&
+                (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                 path.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    var uri = new Uri(path);
+                    name = uri.Host;
+                }
+                catch
+                {
+                    if (string.IsNullOrWhiteSpace(name)) name = path;
+                }
+                LaunchNameBox.Text = name;
+            }
+
+            _editingLaunch.Name = name;
             _editingLaunch.Description = LaunchDescBox.Text.Trim();
-            _editingLaunch.Path = LaunchPathBox.Text.Trim();
+            _editingLaunch.Path = path;
             _editingLaunch.Args = LaunchArgsBox.Text.Trim();
             _editingLaunch.Aliases = ParseLines(LaunchAliasBox.Text);
             RefreshLaunchList();
@@ -529,6 +548,7 @@ namespace AltRunSharp
             HotkeyRecordBox.Text = _config.Hotkey ?? "Alt+R";
             StartupToggle.IsChecked = AdminHelper.IsStartupEnabled();
             ContextMenuToggle.IsChecked = AdminHelper.IsContextMenuEnabled();
+            FullscreenToggle.IsChecked = _config.SuppressWhenFullscreen;
             CurrentVersionRun.Text = UpdateService.CurrentVersion;
             UpdateStatusText.Text = "";
             UpdateProgress.Visibility = Visibility.Collapsed;
@@ -781,6 +801,20 @@ namespace AltRunSharp
                     _suppressFieldEvents = false;
                 }
             }
+        }
+
+        private void FullscreenToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressFieldEvents) return;
+            _config.SuppressWhenFullscreen = true;
+            SaveConfig();
+        }
+
+        private void FullscreenToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressFieldEvents) return;
+            _config.SuppressWhenFullscreen = false;
+            SaveConfig();
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
