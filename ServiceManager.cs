@@ -21,6 +21,8 @@ namespace AltRunSharp
         public bool IsRunning { get; set; }
         public bool IsWaitingRestart { get; set; }
         public bool StopRequested { get; set; }
+        /// <summary>Manual restart requested (skip the 10s countdown, restart immediately).</summary>
+        public bool RestartRequested { get; set; }
         public DateTime? RestartAt { get; set; }
 
         public string DisplayName => string.IsNullOrWhiteSpace(ExtraArgs)
@@ -89,6 +91,15 @@ namespace AltRunSharp
             _services[entry.InstanceId] = entry;
             System.Threading.Tasks.Task.Run(() => RunLoop(entry));
             return entry.InstanceId;
+        }
+
+        /// <summary>Restart a running instance with the same script and same extra args.</summary>
+        public void RestartService(string instanceId)
+        {
+            if (!_services.TryGetValue(instanceId, out var entry)) return;
+            entry.RestartRequested = true;
+            try { entry.Process?.Kill(entireProcessTree: true); } catch { }
+            NotifyChanged();
         }
 
         /// <summary>Stop a specific instance by InstanceId.</summary>
@@ -227,17 +238,21 @@ namespace AltRunSharp
                 // ── 10-second restart countdown ───────────────────────────────
                 entry.IsWaitingRestart = true;
                 entry.RestartAt = DateTime.UtcNow.AddSeconds(10);
-                AppendLog(logFile, "=== 10秒后自动重启 ===");
+                if (entry.RestartRequested)
+                    AppendLog(logFile, "=== 手动重启 ===");
+                else
+                    AppendLog(logFile, "=== 10秒后自动重启 ===");
 
                 for (int i = 0; i < 100; i++)
                 {
-                    if (entry.StopRequested) break;
+                    if (entry.StopRequested || entry.RestartRequested) break;
                     Thread.Sleep(100);
                     if (i % 10 == 0) NotifyChanged();
                 }
 
                 entry.IsWaitingRestart = false;
                 entry.RestartAt = null;
+                entry.RestartRequested = false;
             }
 
             entry.IsRunning = false;

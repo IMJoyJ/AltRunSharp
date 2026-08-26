@@ -480,6 +480,12 @@ namespace AltRunSharp
             NoServicesText.Visibility = services.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        private void RestartServiceInstance_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string instanceId)
+                _serviceManager.RestartService(instanceId);
+        }
+
         private void StopServiceInstance_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is string instanceId)
