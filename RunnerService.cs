@@ -20,10 +20,30 @@ namespace AltRunSharp
             _dataDir = dataDir;
         }
 
-        // ── Launch item (exe) ─────────────────────────────────────────────────
+        // ── Launch item (exe / url) ──────────────────────────────────────────
 
         public void RunLaunchItem(LaunchItem item)
         {
+            if (!string.IsNullOrWhiteSpace(item.Path) &&
+                (item.Path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                 item.Path.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = item.Path,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"启动失败：{ex.Message}", "AltRunSharp",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                return;
+            }
+
             string workDir = Path.GetDirectoryName(item.Path) ?? _appBaseDir;
             var psi = new ProcessStartInfo
             {
