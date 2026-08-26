@@ -37,6 +37,10 @@
     <None Remove="data\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="TinyPinyin.Net" Version="1.0.2" />
+  </ItemGroup>
+
   <!-- Dev-only: rename locked exe before rebuild (local only, skipped in CI) -->
   <Target Name="RenameLockedExe" BeforeTargets="BeforeBuild"
           Condition="'$(CI)' != 'true' And Exists('$(TargetDir)$(TargetName).exe')">
