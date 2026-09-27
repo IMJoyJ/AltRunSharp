@@ -54,6 +54,9 @@ namespace AltRunSharp
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         private static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
 
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern int RegisterWindowMessage(string lpString);
+
         private const int NIM_ADD = 0x00;
         private const int NIM_DELETE = 0x02;
         private const int NIF_MESSAGE = 0x01;
@@ -66,6 +69,13 @@ namespace AltRunSharp
 
         private NOTIFYICONDATA _nid;
         private ContextMenu? _trayMenu;
+
+        // Explorer 重启后任务栏重建 → 必须重新 NIM_ADD 注册，否则图标永久丢失
+        private static readonly int WM_TASKBARCREATED = RegisterWindowMessage("TaskbarCreated");
+        private System.Drawing.Icon? _trayIcon;          // 当前持有（拥有所有权）的图标对象
+        private DispatcherTimer? _trayRetryTimer;
+        private int _trayRetryCount;
+        private const int MaxTrayRetries = 12;           // 5s × 12 ≈ 1 分钟退避窗口
 
         // ── Monitor & DPI ────────────────────────────────────────────────────
         [StructLayout(LayoutKind.Sequential)]
@@ -156,18 +166,62 @@ namespace AltRunSharp
         /// Loads the tray icon from the WPF embedded resource (works in both
         /// normal builds and PublishSingleFile bundles).
         /// </summary>
-        private static IntPtr LoadTrayIcon()
+        /// <remarks>
+        /// Returns an <see cref="System.Drawing.Icon"/> the caller OWNS and must
+        /// Dispose deterministically: the shell does not copy the HICON, so letting
+        /// the GC finalizer DestroyIcon it would silently blank the tray icon.
+        /// </remarks>
+        private static System.Drawing.Icon LoadTrayIcon()
         {
             try
             {
                 var uri = new Uri("pack://application:,,,/icon.ico");
                 using var stream = System.Windows.Application.GetResourceStream(uri)?.Stream;
                 if (stream != null)
-                    return new System.Drawing.Icon(stream).Handle;
+                    return new System.Drawing.Icon(stream);
             }
             catch { }
-            return System.Drawing.SystemIcons.Application.Handle;
+            // 注意：SystemIcons.Application 是共享句柄，禁止销毁；必须 Clone 出私有副本
+            return (System.Drawing.Icon)System.Drawing.SystemIcons.Application.Clone();
         }
+
+        /// <summary>
+        /// 幂等地把托盘图标注册到任务栏。NIM_ADD 失败（启动早于 shell、
+        /// TaskbarCreated 到达时 shell 尚未就绪）时退避重试。
+        /// </summary>
+        private void AddTrayIcon()
+        {
+            var newIcon = LoadTrayIcon();
+            _nid.hIcon = newIcon.Handle;
+            if (Shell_NotifyIcon(NIM_ADD, ref _nid))
+            {
+                _trayIcon?.Dispose();      // 销毁旧句柄（确定性释放，不等 GC）
+                _trayIcon = newIcon;
+                StopTrayRetry();
+            }
+            else
+            {
+                newIcon.Dispose();         // 未被 shell 采纳，立即销毁
+                StartTrayRetry();
+            }
+        }
+
+        private void StartTrayRetry()
+        {
+            _trayRetryTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            _trayRetryTimer.Tick -= TrayRetryTick;
+            _trayRetryTimer.Tick += TrayRetryTick;
+            _trayRetryCount = 0;
+            _trayRetryTimer.Start();
+        }
+
+        private void TrayRetryTick(object? sender, EventArgs e)
+        {
+            if (++_trayRetryCount > MaxTrayRetries) { StopTrayRetry(); return; }
+            AddTrayIcon();
+        }
+
+        private void StopTrayRetry() => _trayRetryTimer?.Stop();
 
         private void InitTray()
         {
@@ -178,10 +232,9 @@ namespace AltRunSharp
                 uID = 1,
                 uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
                 uCallbackMessage = WM_TRAYMSG,
-                hIcon = LoadTrayIcon(),
+                hIcon = IntPtr.Zero,
                 szTip = "AltRunSharp"
             };
-            Shell_NotifyIcon(NIM_ADD, ref _nid);
 
             _trayMenu = new ContextMenu();
             var showItem = new MenuItem { Header = "显示" };
@@ -194,6 +247,8 @@ namespace AltRunSharp
             _trayMenu.Items.Add(showItem);
             _trayMenu.Items.Add(settingsItem);
             _trayMenu.Items.Add(exitItem);
+
+            AddTrayIcon();
         }
 
         private void ShowTrayContextMenu()
@@ -598,7 +653,13 @@ namespace AltRunSharp
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            if (msg == WM_TRAYMSG)
+            if (msg == WM_TASKBARCREATED)
+            {
+                // Explorer 重启（崩溃/更新/手动）→ 任务栏重建，托盘图标必须重新注册
+                // 这是广播消息：不得设置 handled，也不得 return 非零
+                AddTrayIcon();
+            }
+            else if (msg == WM_TRAYMSG)
             {
                 int eventId = (int)lParam;
                 if (eventId == WM_RBUTTONUP) { ShowTrayContextMenu(); handled = true; }
@@ -690,7 +751,10 @@ namespace AltRunSharp
             }
             Microsoft.Win32.SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
+            StopTrayRetry();
             Shell_NotifyIcon(NIM_DELETE, ref _nid);
+            _trayIcon?.Dispose();
+            _trayIcon = null;
         }
 
         protected override void OnClosed(EventArgs e)
